@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { ApiError, createIncident, getAnomaly } from "@/lib/api";
 import type { FeatureContribution } from "@/types/anomaly";
+import Modal from "@/components/ui/Modal";
 import StatusBadge from "@/components/ui/StatusBadge";
 import FeatureContributionChart from "@/components/anomalies/FeatureContributionChart";
 import {
@@ -82,7 +83,6 @@ export default function AnomalyDetails({
   onClose,
   onIncidentChange,
 }: AnomalyDetailsProps) {
-  const panelRef = useRef<HTMLDivElement>(null);
   const [detail, setDetail] = useState<Awaited<
     ReturnType<typeof getAnomaly>
   > | null>(null);
@@ -113,20 +113,7 @@ export default function AnomalyDetails({
     };
   }, [recordId]);
 
-  useEffect(() => {
-    if (recordId == null) return;
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    panelRef.current?.focus();
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [recordId, onClose]);
+
 
   if (recordId == null) return null;
 
@@ -168,20 +155,8 @@ export default function AnomalyDetails({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-[60] flex items-end justify-center bg-black/70 p-0 sm:items-center sm:p-6"
-      role="presentation"
-      onClick={onClose}
-    >
-      <div
-        ref={panelRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="anomaly-details-title"
-        tabIndex={-1}
-        onClick={(event) => event.stopPropagation()}
-        className="max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-t-lg border border-line bg-surface shadow-2xl outline-none sm:rounded-lg"
-      >
+    <Modal open={true} onClose={onClose} labelledBy="anomaly-details-title"
+      className="max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-t-lg border border-line bg-surface shadow-2xl outline-none sm:rounded-lg">
         <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-line bg-surface px-5 py-4">
           <div>
             <p className="text-[11px] font-medium tracking-[0.12em] text-slate-500 uppercase">
@@ -451,7 +426,6 @@ export default function AnomalyDetails({
             </section>
           </div>
         ) : null}
-      </div>
-    </div>
+    </Modal>
   );
 }

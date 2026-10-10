@@ -257,7 +257,7 @@ export default function IncidentManagement() {
                     onChange={(event) => setScanDryRun(event.target.checked)}
                     className="h-4 w-4 rounded border-line bg-surface-raised text-accent focus:ring-accent"
                   />
-                  Preview only (dry run)
+                  <span>Preview only (dry run)</span>
                 </label>
               </div>
             </div>

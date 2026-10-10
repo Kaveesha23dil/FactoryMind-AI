@@ -226,14 +226,14 @@ export default function Dashboard() {
                       className="h-2 w-4 rounded-sm bg-cyan-accent"
                       aria-hidden="true"
                     />
-                    Air temperature (°C)
+                    <span>Air temperature (°C)</span>
                   </span>
                   <span className="inline-flex items-center gap-1.5">
                     <span
                       className="h-2 w-4 rounded-sm bg-warning"
                       aria-hidden="true"
                     />
-                    Process temperature (°C)
+                    <span>Process temperature (°C)</span>
                   </span>
                 </div>
                 <TemperatureChart

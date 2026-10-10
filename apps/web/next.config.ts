@@ -3,14 +3,14 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
-  async redirects() {
-    return [
+  redirects() {
+    return Promise.resolve([
       {
         source: "/",
         destination: "/overview",
         permanent: false,
       },
-    ];
+    ]);
   },
   turbopack: {
     rules: {

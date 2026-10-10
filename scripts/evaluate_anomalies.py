@@ -9,11 +9,11 @@ from services.api.services.evaluation_service import EvaluationService
 
 def main():
     parser = argparse.ArgumentParser(description="Export reproducible held-out anomaly metrics")
-    parser.add_argument("--output", type=Path, default=Path("reports/anomaly-evaluation.json"))
-    args = parser.parse_args()
+    parser.parse_args()
     report = EvaluationService().report()
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(report, indent=2, allow_nan=False) + "\n", encoding="utf-8")
+    output = Path(__file__).resolve().parents[1] / "reports" / "anomaly-evaluation.json"
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(report, indent=2, allow_nan=False) + "\n", encoding="utf-8")
     print(json.dumps(report, indent=2, allow_nan=False))
 
 

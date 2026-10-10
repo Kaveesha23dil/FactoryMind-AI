@@ -223,11 +223,11 @@ export default function TelemetryDetails({
               <div>
                 <p className="flex items-center gap-2 text-sm font-medium text-slate-300">
                   <BrainCircuit className="h-4 w-4 text-accent" aria-hidden="true" />
-                  Investigate with AI — Coming in Step 3
+                  Investigate with AI — Coming in Step 4
                 </p>
                 <p className="mt-1 text-xs text-slate-500">
-                  AI-powered anomaly investigation is planned for the next
-                  development phase and is not functional yet.
+                  AI-powered, evidence-based root-cause investigation is planned
+                  for the next development phase and is not functional yet.
                 </p>
               </div>
               <button
@@ -238,7 +238,7 @@ export default function TelemetryDetails({
                   "shrink-0 cursor-not-allowed rounded-md border border-line bg-surface-raised px-3 py-2 text-xs font-medium text-slate-500"
                 )}
               >
-                Investigate with AI — Coming in Step 3
+                Coming in Step 4
               </button>
             </div>
           </section>

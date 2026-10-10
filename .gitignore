@@ -6,3 +6,7 @@ __pycache__/
 .env.*
 !.env.example
 *.pyc
+.pytest_cache/
+.pytest_tmp/
+services/api/data/
+*.db

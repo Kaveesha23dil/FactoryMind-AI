@@ -1,159 +1,95 @@
-from pathlib import Path
-from typing import Optional
+"""FactoryMind AI FastAPI application.
 
-import pandas as pd
-from fastapi import FastAPI, HTTPException, Query
+Wires dataset/telemetry, anomaly detection, and incident management routers,
+configures CORS from settings, installs structured logging, and warms the
+anomaly engine / incident store at startup.
+
+Local-development API only; state-changing incident endpoints are NOT
+authenticated or hardened for public deployment.
+"""
+
+from __future__ import annotations
+
+import logging
+import json
+from datetime import datetime, timezone
+import time
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
-DATASET_PATH = (
-    Path(__file__).resolve().parents[2]
-    / "datasets"
-    / "telemetry"
-    / "ai4i2020.csv"
+from services.api.core import config
+from services.api.routes import anomalies, dataset, incidents
+from services.api.services.anomaly_engine import get_engine
+from services.api.routes.incidents import get_service
+
+class JsonLogFormatter(logging.Formatter):
+    def format(self, record):
+        entry = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+        }
+        if record.exc_info:
+            entry["exception"] = self.formatException(record.exc_info)
+        return json.dumps(entry)
+
+
+log_handler = logging.StreamHandler()
+log_handler.setFormatter(JsonLogFormatter())
+logging.basicConfig(
+    level=getattr(logging, config.settings.log_level.upper(), logging.INFO),
+    handlers=[log_handler],
 )
+logger = logging.getLogger("factorymind.api")
 
-FAILURE_CATEGORY_COLUMNS = ["TWF", "HDF", "PWF", "OSF", "RNF"]
 
-FAILURE_CATEGORY_LABELS = {
-    "TWF": "Tool Wear Failure",
-    "HDF": "Heat Dissipation Failure",
-    "PWF": "Power Failure",
-    "OSF": "Overstrain Failure",
-    "RNF": "Random Failure",
-}
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    started = time.perf_counter()
+    get_service().initialize()
+    summary = get_engine().summary()
+    logger.info(
+        "Startup complete in %.2fs: %d observations scored (%d anomalies), store ready at %s",
+        time.perf_counter() - started,
+        summary["analyzed_sample_count"],
+        summary["detected_anomaly_count"],
+        config.settings.database_path,
+    )
+    yield
 
-DATASET_NAME = "AI4I 2020 Predictive Maintenance Dataset"
-DATASET_SOURCE = "AI4I 2020 - Synthetic Dataset"
 
-app = FastAPI(title="FactoryMind AI API", version="0.2.0")
+app = FastAPI(
+    title="FactoryMind AI API",
+    version="0.3.0",
+    description=(
+        "Evidence-driven industrial intelligence API. Anomaly severities are "
+        "application-defined and are not official equipment safety classes."
+    ),
+    lifespan=lifespan,
+)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-    ],
+    allow_origins=config.settings.cors_origins,
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-
-def load_dataset() -> pd.DataFrame:
-    if not DATASET_PATH.exists():
-        raise RuntimeError(f"AI4I dataset not found at {DATASET_PATH}")
-    return pd.read_csv(DATASET_PATH)
+app.include_router(dataset.router)
+app.include_router(anomalies.router)
+app.include_router(incidents.router)
 
 
-DATASET = load_dataset()
-
-
-def to_record(row: pd.Series) -> dict:
-    air_k = float(row["Air temperature [K]"])
-    process_k = float(row["Process temperature [K]"])
-    flags = {name: int(row[name]) for name in FAILURE_CATEGORY_COLUMNS}
-    active = [name for name in FAILURE_CATEGORY_COLUMNS if flags[name] == 1]
-
-    return {
-        "record_id": int(row["UDI"]),
-        "product_id": str(row["Product ID"]),
-        "machine_type": str(row["Type"]),
-        "air_temperature_k": round(air_k, 2),
-        "air_temperature_c": round(air_k - 273.15, 2),
-        "process_temperature_k": round(process_k, 2),
-        "process_temperature_c": round(process_k - 273.15, 2),
-        "rotational_speed_rpm": int(row["Rotational speed [rpm]"]),
-        "torque_nm": float(row["Torque [Nm]"]),
-        "tool_wear_min": int(row["Tool wear [min]"]),
-        "machine_failure": bool(int(row["Machine failure"])),
-        "failure_flags": flags,
-        "failure_types": active,
-    }
-
-
-@app.get("/health")
-def health():
-    return {
-        "status": "healthy",
-        "project": "FactoryMind AI",
-        "version": "0.2.0",
-        "dataset": DATASET_NAME,
-        "records": int(len(DATASET)),
-    }
-
-
-@app.get("/api/dataset/summary")
-def dataset_summary():
-    total = int(len(DATASET))
-    failures = int((DATASET["Machine failure"] == 1).sum())
-    normal = total - failures
-
-    failure_categories = [
-        {
-            "code": code,
-            "label": FAILURE_CATEGORY_LABELS[code],
-            "count": int(DATASET[code].sum()),
-        }
-        for code in FAILURE_CATEGORY_COLUMNS
-    ]
-
-    machine_types = [
-        {"type": machine_type, "count": int(count)}
-        for machine_type, count in DATASET["Type"].value_counts().items()
-    ]
-
-    return {
-        "dataset": DATASET_NAME,
-        "source": DATASET_SOURCE,
-        "record_count": total,
-        "normal_count": normal,
-        "failure_count": failures,
-        "failure_rate": round(failures / total, 4) if total else 0.0,
-        "failure_categories": failure_categories,
-        "machine_types": machine_types,
-    }
-
-
-@app.get("/api/telemetry")
-def telemetry(
-    limit: int = Query(100, ge=1, le=500),
-    offset: int = Query(0, ge=0),
-    failure_only: bool = Query(False),
-    normal_only: bool = Query(False),
-    record_id: Optional[int] = Query(None, ge=1),
-    machine_type: Optional[str] = Query(None),
-):
-    frame = DATASET
-
-    if record_id is not None:
-        frame = frame[frame["UDI"] == record_id]
-
-    if failure_only:
-        frame = frame[frame["Machine failure"] == 1]
-    elif normal_only:
-        frame = frame[frame["Machine failure"] == 0]
-
-    if machine_type:
-        frame = frame[frame["Type"] == machine_type.upper()]
-
-    total = int(len(frame))
-    window = frame.iloc[offset : offset + limit]
-    records = [to_record(row) for _, row in window.iterrows()]
-
-    return {
-        "dataset": DATASET_NAME,
-        "source": DATASET_SOURCE,
-        "total": total,
-        "limit": limit,
-        "offset": offset,
-        "returned": len(records),
-        "records": records,
-    }
-
-
-@app.get("/api/telemetry/{record_id}")
-def telemetry_record(record_id: int):
-    match = DATASET[DATASET["UDI"] == record_id]
-    if match.empty:
-        raise HTTPException(status_code=404, detail="Record not found")
-    return to_record(match.iloc[0])
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    # Log the stack trace server-side but never expose it to the client.
+    logger.exception("Unhandled error on %s %s", request.method, request.url.path)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error", "error": "internal_error"},
+    )

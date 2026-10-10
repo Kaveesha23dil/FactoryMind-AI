@@ -263,7 +263,18 @@ EVIDENCE_TYPE_PREFIXES = {
     "anomaly_finding": "EV-ANOMALY",
     "source_metadata": "EV-SOURCE",
     "manual_passage": "EV-MANUAL",
+    "visual_observation": "EV-VISUAL",
 }
+
+#: Evidence types an engineer may exclude from a counterfactual revision.
+EXCLUDABLE_EVIDENCE_TYPES = [
+    "sensor_measurement",
+    "baseline_statistic",
+    "anomaly_finding",
+    "source_metadata",
+    "manual_passage",
+    "visual_observation",
+]
 
 #: Provider used by the investigation runtime: ``google`` (Gemini / ADK) or
 #: ``scripted`` (deterministic responses used only by automated tests).
@@ -274,6 +285,25 @@ KNOWLEDGE_TOP_K = _env_int("FACTORYMIND_KNOWLEDGE_TOP_K", 5)
 
 #: Hard bounds so a single investigation can never run unbounded.
 MAX_INVESTIGATION_ATTEMPTS = 3
+
+
+# --- Counterfactual investigations (Step 5) ---------------------------------
+
+COUNTERFACTUAL_ID_PREFIX = "CFT-"
+
+#: Hard cap so a single revision cannot exclude the entire evidence base.
+MAX_COUNTERFACTUAL_EXCLUSIONS = 50
+
+
+# --- Visual inspection (Step 5) ---------------------------------------------
+
+VISUAL_IMAGE_ID_PREFIX = "IMG-"
+
+#: Accepted image MIME types for visual inspection (no Pillow dependency).
+VISUAL_ALLOWED_MIME_TYPES = ["image/png", "image/jpeg", "image/webp", "image/gif"]
+
+#: Upload guard.
+VISUAL_MAX_IMAGE_BYTES = _env_int("FACTORYMIND_VISUAL_MAX_IMAGE_BYTES", 5 * 1024 * 1024)
 
 
 @dataclass(frozen=True)
@@ -329,6 +359,11 @@ class Settings:
     ))
     worker_secret: str | None = field(default_factory=lambda: (
         os.environ.get("FACTORYMIND_WORKER_SECRET") or None
+    ))
+    visual_storage_dir: Path = field(default_factory=lambda: Path(
+        os.environ.get(
+            "FACTORYMIND_VISUAL_STORAGE_DIR", str(API_ROOT / "data" / "visual_evidence")
+        )
     ))
 
 

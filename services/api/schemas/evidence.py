@@ -17,6 +17,7 @@ EvidenceType = Literal[
     "anomaly_finding",
     "source_metadata",
     "manual_passage",
+    "visual_observation",
 ]
 
 

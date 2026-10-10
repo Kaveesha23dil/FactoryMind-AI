@@ -55,6 +55,10 @@ class CriticReview(BaseModel):
         default_factory=list,
         description="Issues found by deterministic validation, not by the model.",
     )
+    excluded_evidence_reused: list[str] = Field(
+        default_factory=list,
+        description="Excluded evidence IDs that reappeared in a counterfactual draft.",
+    )
 
 
 class RecommendedAction(BaseModel):
@@ -63,6 +67,10 @@ class RecommendedAction(BaseModel):
     action: str
     rationale: str = ""
     requires_human_approval: bool = True
+    supporting_hypothesis_ids: list[str] = Field(
+        default_factory=list,
+        description="Hypotheses whose verification steps produced this action.",
+    )
 
 
 class InvestigationReport(BaseModel):
@@ -82,6 +90,10 @@ class InvestigationReport(BaseModel):
     evidence_catalog: list[str] = Field(default_factory=list)
     rejected_citations: list[str] = Field(default_factory=list)
     revision_count: int = 0
+    counterfactual: dict[str, Any] | None = Field(
+        default=None,
+        description="Scenario metadata when this report is a counterfactual revision.",
+    )
     disclaimer: str
 
 

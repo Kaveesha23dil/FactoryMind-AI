@@ -18,7 +18,8 @@ export type EvidenceType =
   | "anomaly_finding"
   | "sensor_measurement"
   | "baseline_statistic"
-  | "manual_passage";
+  | "manual_passage"
+  | "visual_observation";
 
 export interface StageEntry {
   stage: string;
@@ -57,12 +58,22 @@ export interface CriticReview {
   citation_issues: string[];
   revision_required: boolean;
   deterministic_findings: string[];
+  excluded_evidence_reused: string[];
 }
 
 export interface RecommendedAction {
   action: string;
   rationale: string;
   requires_human_approval: boolean;
+  supporting_hypothesis_ids: string[];
+}
+
+export interface CounterfactualMeta {
+  scenario_id: string;
+  original_investigation_id: string;
+  excluded_evidence_ids: string[];
+  excluded_feature_keys: string[];
+  rationale: string | null;
 }
 
 export interface InvestigationReport {
@@ -80,6 +91,7 @@ export interface InvestigationReport {
   evidence_catalog: string[];
   rejected_citations: string[];
   revision_count: number;
+  counterfactual: CounterfactualMeta | null;
   disclaimer: string;
 }
 

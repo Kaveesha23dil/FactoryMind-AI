@@ -15,6 +15,16 @@ from pathlib import Path
 API_ROOT = Path(__file__).resolve().parents[1]
 REPO_ROOT = API_ROOT.parents[1]
 
+# Load backend-only secrets from services/api/.env when present. Existing
+# environment variables always win, so deployment configuration is not
+# overwritten. Secrets are never exposed to the frontend.
+try:  # pragma: no cover - environment dependent
+    from dotenv import load_dotenv
+
+    load_dotenv(API_ROOT / ".env", override=False)
+except Exception:  # pragma: no cover - dotenv is optional
+    pass
+
 DEFAULT_DATASET_PATH = REPO_ROOT / "datasets" / "telemetry" / "ai4i2020.csv"
 DEFAULT_DB_PATH = API_ROOT / "data" / "incidents.db"
 
@@ -47,6 +57,13 @@ def _env_list(name: str, default: list[str]) -> list[str]:
     if raw is None or raw.strip() == "":
         return default
     return [item.strip() for item in raw.split(",") if item.strip()]
+
+
+def _env_bool(name: str, default: bool) -> bool:
+    raw = os.environ.get(name)
+    if raw is None or raw.strip() == "":
+        return default
+    return raw.strip().lower() in ("1", "true", "yes", "on")
 
 
 # --- Dataset metadata -------------------------------------------------------
@@ -210,6 +227,55 @@ SCAN_DEFAULT_MAX_INCIDENTS = _env_int("FACTORYMIND_SCAN_MAX_INCIDENTS", 25)
 SCAN_MAX_INCIDENTS_LIMIT = 200
 
 
+# --- AI investigation (Step 4) ---------------------------------------------
+
+INVESTIGATION_ID_PREFIX = "INV-"
+
+#: Coarse job lifecycle used by the API and the worker queue.
+INVESTIGATION_STATUSES = ["queued", "running", "completed", "failed"]
+
+#: Fine-grained progress stages reported to the frontend. The value is the
+#: stable machine key; the frontend owns the human-readable labels.
+INVESTIGATION_STAGES = [
+    "queued",
+    "collecting_evidence",
+    "analyzing_measurements",
+    "retrieving_knowledge",
+    "generating_hypotheses",
+    "verifying_conclusions",
+    "completed",
+    "failed",
+]
+
+#: Logical agents executed by the orchestrator, in pipeline order.
+INVESTIGATION_AGENTS = [
+    "sensor_agent",
+    "knowledge_agent",
+    "investigation_agent",
+    "critic_agent",
+]
+
+#: Evidence ID prefixes. IDs are deterministic within an investigation so they
+#: are stable across revisions and can be cited safely.
+EVIDENCE_TYPE_PREFIXES = {
+    "sensor_measurement": "EV-SENSOR",
+    "baseline_statistic": "EV-BASELINE",
+    "anomaly_finding": "EV-ANOMALY",
+    "source_metadata": "EV-SOURCE",
+    "manual_passage": "EV-MANUAL",
+}
+
+#: Provider used by the investigation runtime: ``google`` (Gemini / ADK) or
+#: ``scripted`` (deterministic responses used only by automated tests).
+AI_PROVIDERS = ["google", "scripted"]
+
+#: Number of knowledge-base passages retrieved for the Knowledge Agent.
+KNOWLEDGE_TOP_K = _env_int("FACTORYMIND_KNOWLEDGE_TOP_K", 5)
+
+#: Hard bounds so a single investigation can never run unbounded.
+MAX_INVESTIGATION_ATTEMPTS = 3
+
+
 @dataclass(frozen=True)
 class Settings:
     dataset_path: Path = field(default_factory=lambda: Path(
@@ -224,6 +290,45 @@ class Settings:
     ))
     log_level: str = field(default_factory=lambda: os.environ.get(
         "FACTORYMIND_LOG_LEVEL", "INFO"
+    ))
+
+    # -- AI investigation -------------------------------------------------
+    ai_provider: str = field(default_factory=lambda: (
+        os.environ.get("AI_PROVIDER", "google").strip().lower() or "google"
+    ))
+    gemini_model: str = field(default_factory=lambda: (
+        os.environ.get("GEMINI_MODEL", "gemini-2.5-flash").strip()
+        or "gemini-2.5-flash"
+    ))
+    google_api_key: str | None = field(default_factory=lambda: (
+        os.environ.get("GOOGLE_API_KEY") or None
+    ))
+    use_vertex_ai: bool = field(default_factory=lambda: _env_bool(
+        "GOOGLE_GENAI_USE_VERTEXAI", False
+    ))
+    gcp_project: str | None = field(default_factory=lambda: (
+        os.environ.get("GOOGLE_CLOUD_PROJECT") or None
+    ))
+    gcp_location: str | None = field(default_factory=lambda: (
+        os.environ.get("GOOGLE_CLOUD_LOCATION") or None
+    ))
+    ai_investigation_enabled: bool = field(default_factory=lambda: _env_bool(
+        "AI_INVESTIGATION_ENABLED", True
+    ))
+    investigation_timeout_seconds: float = field(default_factory=lambda: _env_float(
+        "FACTORYMIND_INVESTIGATION_TIMEOUT_SECONDS", 90.0
+    ))
+    investigation_max_retries: int = field(default_factory=lambda: _env_int(
+        "FACTORYMIND_INVESTIGATION_MAX_RETRIES", 1
+    ))
+    investigation_max_hypotheses: int = field(default_factory=lambda: _env_int(
+        "FACTORYMIND_INVESTIGATION_MAX_HYPOTHESES", 4
+    ))
+    investigation_async: bool = field(default_factory=lambda: _env_bool(
+        "FACTORYMIND_INVESTIGATION_ASYNC", True
+    ))
+    worker_secret: str | None = field(default_factory=lambda: (
+        os.environ.get("FACTORYMIND_WORKER_SECRET") or None
     ))
 
 

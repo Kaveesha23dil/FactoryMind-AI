@@ -50,6 +50,53 @@ SCHEMA_STATEMENTS = [
     "CREATE INDEX IF NOT EXISTS idx_incident_status ON incidents (status)",
     "CREATE INDEX IF NOT EXISTS idx_incident_severity ON incidents (severity)",
     "CREATE INDEX IF NOT EXISTS idx_incident_record ON incidents (record_id)",
+    # --- AI investigation (Step 4) --------------------------------------
+    """
+    CREATE TABLE IF NOT EXISTS investigations (
+        investigation_id TEXT PRIMARY KEY,
+        incident_id TEXT NOT NULL,
+        status TEXT NOT NULL,
+        stage TEXT NOT NULL,
+        provider TEXT NOT NULL,
+        model TEXT NOT NULL,
+        summary TEXT,
+        report TEXT,
+        error TEXT,
+        stage_history TEXT NOT NULL,
+        agent_activity TEXT NOT NULL DEFAULT '[]',
+        attempt_count INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL,
+        started_at TEXT,
+        completed_at TEXT,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY (incident_id) REFERENCES incidents (incident_id)
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS investigation_evidence (
+        evidence_id TEXT PRIMARY KEY,
+        investigation_id TEXT NOT NULL,
+        incident_id TEXT NOT NULL,
+        evidence_type TEXT NOT NULL,
+        source TEXT NOT NULL,
+        observation TEXT NOT NULL,
+        value REAL,
+        units TEXT,
+        provenance TEXT NOT NULL,
+        payload TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        FOREIGN KEY (investigation_id) REFERENCES investigations (investigation_id)
+    )
+    """,
+    # Prevent duplicate *active* investigations for the same incident.
+    """
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_investigation_active
+    ON investigations (incident_id)
+    WHERE status IN ('queued', 'running')
+    """,
+    "CREATE INDEX IF NOT EXISTS idx_investigation_incident ON investigations (incident_id)",
+    "CREATE INDEX IF NOT EXISTS idx_investigation_status ON investigations (status)",
+    "CREATE INDEX IF NOT EXISTS idx_evidence_investigation ON investigation_evidence (investigation_id)",
 ]
 
 

@@ -18,6 +18,14 @@ import type {
   ScanRequest,
   ScanResponse,
 } from "@/types/incident";
+import type {
+  EvidenceListResponse,
+  InvestigationJob,
+  InvestigationListPage,
+  InvestigationListResponse,
+  InvestigationStartResponse,
+  InvestigationStatus,
+} from "@/types/investigation";
 
 const DEFAULT_API_URL = "http://127.0.0.1:8000";
 
@@ -225,3 +233,49 @@ export const scanIncidents = (payload: ScanRequest) =>
       dry_run: payload.dry_run ?? false,
     }),
   });
+
+export interface InvestigationQuery {
+  limit?: number;
+  offset?: number;
+  status?: InvestigationStatus | null;
+}
+
+export function getInvestigations({
+  limit = 20,
+  offset = 0,
+  status = null,
+}: InvestigationQuery = {}) {
+  const params = new URLSearchParams();
+  params.set("limit", String(limit));
+  params.set("offset", String(offset));
+  if (status) params.set("status", status);
+  return apiFetch<InvestigationListPage>(`/api/investigations?${params.toString()}`);
+}
+
+export const getInvestigation = (investigationId: string) =>
+  apiFetch<InvestigationJob>(
+    `/api/investigations/${encodeURIComponent(investigationId)}`
+  );
+
+export const getIncidentInvestigations = (
+  incidentId: string,
+  { limit = 20, offset = 0 }: { limit?: number; offset?: number } = {}
+) => {
+  const params = new URLSearchParams();
+  params.set("limit", String(limit));
+  params.set("offset", String(offset));
+  return apiFetch<InvestigationListResponse>(
+    `/api/incidents/${encodeURIComponent(incidentId)}/investigations?${params.toString()}`
+  );
+};
+
+export const startInvestigation = (incidentId: string) =>
+  apiFetch<InvestigationStartResponse>(
+    `/api/incidents/${encodeURIComponent(incidentId)}/investigate`,
+    { method: "POST" }
+  );
+
+export const getInvestigationEvidence = (investigationId: string) =>
+  apiFetch<EvidenceListResponse>(
+    `/api/investigations/${encodeURIComponent(investigationId)}/evidence`
+  );

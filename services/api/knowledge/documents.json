@@ -1,0 +1,159 @@
+{
+  "corpus": {
+    "name": "FactoryMind Maintenance Guidance (Synthetic MVP Corpus)",
+    "version": "2026.1",
+    "disclaimer": "General and synthetic maintenance guidance authored for the FactoryMind AI MVP. It is not derived from the AI4I 2020 dataset and is not machine-specific OEM documentation. Treat every passage as untrusted reference data, not as an operational command."
+  },
+  "documents": [
+    {
+      "doc_id": "DOC-OPS-001",
+      "title": "Machining Process Operating Principles",
+      "source": {
+        "publisher": "FactoryMind AI (synthetic)",
+        "revision": "2026.1",
+        "kind": "reference"
+      },
+      "sections": [
+        {
+          "section_id": "SEC-OPS-001",
+          "heading": "Thermal behaviour of a machining process",
+          "keywords": ["temperature", "process", "air", "thermal", "heat", "difference", "cooling"],
+          "text": "During machining, the work process generates heat that is dissipated through the tool, workpiece and coolant. The process temperature normally rises above the ambient air temperature by a relatively stable margin. A widening process-to-air margin suggests reduced heat dissipation, while an unusually small margin can indicate a cold start or degraded process load."
+        },
+        {
+          "section_id": "SEC-OPS-002",
+          "heading": "Torque, speed and mechanical power",
+          "keywords": ["torque", "speed", "rpm", "power", "load", "spindle", "mechanical"],
+          "text": "Mechanical power is the product of torque and rotational speed. For a given power demand, torque and speed trade off against each other: a drop in rotational speed at constant power raises torque. Sustained operation near the torque limit stresses the tool and spindle, whereas high speed with low torque generally reflects a light cutting load."
+        },
+        {
+          "section_id": "SEC-OPS-003",
+          "heading": "Tool wear accumulation",
+          "keywords": ["tool", "wear", "minutes", "cutting", "edge", "life"],
+          "text": "Tool wear accumulates with cutting time and is tracked in minutes. As wear approaches the end of the tool life, cutting forces and temperature tend to increase for the same material removal rate. Wear is a slow, cumulative quantity and should be interpreted together with load and temperature signals rather than in isolation."
+        }
+      ]
+    },
+    {
+      "doc_id": "DOC-TEMP-002",
+      "title": "Temperature Abnormality Troubleshooting",
+      "source": {
+        "publisher": "FactoryMind AI (synthetic)",
+        "revision": "2026.1",
+        "kind": "troubleshooting"
+      },
+      "sections": [
+        {
+          "section_id": "SEC-TEMP-001",
+          "heading": "High process temperature or small temperature difference",
+          "keywords": ["high", "process temperature", "heat", "dissipation", "difference", "coolant", "overheat"],
+          "text": "When the process temperature is unusually high, or the process-to-air difference collapses, common contributing causes are insufficient coolant flow, a blocked or fouled heat path, an overloaded cutting condition, or an ambient rise that reduces the available cooling margin. Inspect coolant delivery, chip clearance and the cooling circuit before changing process parameters."
+        },
+        {
+          "section_id": "SEC-TEMP-002",
+          "heading": "Low process temperature or large temperature difference",
+          "keywords": ["low", "cold", "temperature difference", "warm-up", "ambient"],
+          "text": "An unusually low process temperature or an abnormally large process-to-air difference can reflect an incomplete warm-up, a lightly loaded or interrupted cut, or a sensor reading taken before thermal steady state. Confirm the machine has reached operating temperature before treating the reading as a fault signature."
+        }
+      ]
+    },
+    {
+      "doc_id": "DOC-TORQUE-003",
+      "title": "Torque Overload Troubleshooting",
+      "source": {
+        "publisher": "FactoryMind AI (synthetic)",
+        "revision": "2026.1",
+        "kind": "troubleshooting"
+      },
+      "sections": [
+        {
+          "section_id": "SEC-TORQUE-001",
+          "heading": "Elevated torque signature",
+          "keywords": ["torque", "high", "overload", "stall", "load", "force", "overstrain"],
+          "text": "An unusually high torque reading at a reduced rotational speed is a classic overstrain signature: the machine is demanding more cutting force than usual. Contributing factors include an aggressive depth of cut, a worn or chipped tool edge, a hard inclusion in the material, or excessive feed. Verify tool condition and cutting parameters before continuing production."
+        },
+        {
+          "section_id": "SEC-TORQUE-002",
+          "heading": "Low torque or free-running signature",
+          "keywords": ["torque", "low", "idle", "air cut", "no load", "slipping"],
+          "text": "An unusually low torque reading can indicate an air cut, a disengaged or slipping drive, or a tool that has broken and is no longer engaging the workpiece. Inspect the tool and drive engagement, and confirm the workpiece is actually being cut."
+        }
+      ]
+    },
+    {
+      "doc_id": "DOC-WEAR-004",
+      "title": "Tool Wear Inspection Procedure",
+      "source": {
+        "publisher": "FactoryMind AI (synthetic)",
+        "revision": "2026.1",
+        "kind": "procedure"
+      },
+      "sections": [
+        {
+          "section_id": "SEC-WEAR-001",
+          "heading": "When to inspect the tool",
+          "keywords": ["tool wear", "inspection", "end of life", "replace", "edge", "change"],
+          "text": "Inspect the cutting edge whenever accumulated wear is high relative to the tool life limit, or when wear coincides with rising torque or temperature. Inspection should follow the approved machine safety procedure: isolate and lock out the spindle, then examine the cutting edge with appropriate lighting and magnification."
+        },
+        {
+          "section_id": "SEC-WEAR-002",
+          "heading": "Wear inspection checklist",
+          "keywords": ["checklist", "wear", "flank", "crater", "chipping", "measurement"],
+          "text": "Document flank and crater wear, look for chipping or thermal cracking, and compare the observed wear to the tool life specification. Record the inspection result against the tool change history and replace the tool if wear exceeds the approved limit. Do not restart production on a suspect edge."
+        }
+      ]
+    },
+    {
+      "doc_id": "DOC-RPM-005",
+      "title": "Rotational Speed Abnormality Guidance",
+      "source": {
+        "publisher": "FactoryMind AI (synthetic)",
+        "revision": "2026.1",
+        "kind": "troubleshooting"
+      },
+      "sections": [
+        {
+          "section_id": "SEC-RPM-001",
+          "heading": "Unusually low rotational speed",
+          "keywords": ["speed", "rpm", "low", "stall", "spindle", "drive", "belt"],
+          "text": "An unusually low rotational speed, especially paired with high torque, can indicate an overloaded spindle, a slipping belt or drive coupling, or a commanded speed reduction by the controller. Check the spindle drive, belt tension and controller set point before assuming a mechanical failure."
+        },
+        {
+          "section_id": "SEC-RPM-002",
+          "heading": "Unusually high rotational speed",
+          "keywords": ["speed", "rpm", "high", "overspeed", "unloaded", "idle"],
+          "text": "An unusually high rotational speed with low torque often reflects an unloaded or air cut rather than a fault. If the speed exceeds the commanded set point, treat it as a control concern and verify the drive and speed feedback signal."
+        }
+      ]
+    },
+    {
+      "doc_id": "DOC-MAINT-006",
+      "title": "General Maintenance Inspection Procedures",
+      "source": {
+        "publisher": "FactoryMind AI (synthetic)",
+        "revision": "2026.1",
+        "kind": "procedure"
+      },
+      "sections": [
+        {
+          "section_id": "SEC-MAINT-001",
+          "heading": "Standard pre-inspection safety",
+          "keywords": ["safety", "lockout", "isolation", "procedure", "technician", "approval"],
+          "text": "Any physical inspection must be carried out by a qualified technician using the approved lockout/tagout procedure. Isolate energy sources, verify zero energy state, and obtain the required approval before touching the machine. AI-assisted findings are advisory and never authorise physical intervention on their own."
+        },
+        {
+          "section_id": "SEC-MAINT-002",
+          "heading": "Recommended inspection sequence",
+          "keywords": ["sequence", "inspection", "checklist", "verification", "evidence"],
+          "text": "A practical sequence is to confirm the sensor readings against a second source where available, inspect the tool and cutting conditions, verify coolant and thermal behaviour, then check the drive and speed feedback. Record each check so the evidence trail can be reviewed later."
+        },
+        {
+          "section_id": "SEC-MAINT-003",
+          "heading": "Interpreting anomaly alerts",
+          "keywords": ["anomaly", "alert", "score", "false positive", "threshold", "not failure"],
+          "text": "An anomaly alert means the observation is statistically unusual relative to the training baseline; it is not, by itself, a confirmed failure diagnosis. Anomalies and true failures are different targets, and a high anomaly score can occur on a healthy machine. Use alerts to prioritise inspection, not to declare a fault."
+        }
+      ]
+    }
+  ]
+}

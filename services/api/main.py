@@ -21,7 +21,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from services.api.core import config
-from services.api.routes import anomalies, dataset, incidents, investigations
+from services.api.routes import (
+    anomalies,
+    counterfactuals,
+    dataset,
+    evidence_graph,
+    incidents,
+    investigations,
+    visual_inspection,
+)
 from services.api.services.anomaly_engine import get_engine
 from services.api.routes.incidents import get_service
 from services.api.routes.investigations import get_service as get_investigation_service
@@ -92,6 +100,9 @@ app.include_router(dataset.router)
 app.include_router(anomalies.router)
 app.include_router(incidents.router)
 app.include_router(investigations.router)
+app.include_router(evidence_graph.router)
+app.include_router(counterfactuals.router)
+app.include_router(visual_inspection.router)
 
 
 @app.exception_handler(Exception)

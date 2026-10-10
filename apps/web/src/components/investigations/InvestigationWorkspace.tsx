@@ -8,8 +8,11 @@ import {
   BrainCircuit,
   CheckCircle2,
   FlaskConical,
+  GitCompareArrows,
+  Image as ImageIcon,
   ListChecks,
   Loader2,
+  Network,
   RefreshCw,
   ShieldAlert,
   XCircle,
@@ -30,6 +33,9 @@ import {
   EmptyState,
   ErrorState,
 } from "@/components/ui/Feedback";
+import EvidenceGraphView from "@/components/investigations/EvidenceGraphView";
+import CounterfactualPanel from "@/components/investigations/CounterfactualPanel";
+import VisualInspectionPanel from "@/components/investigations/VisualInspectionPanel";
 import {
   AGENT_ORDER,
   AGENT_STATUS_LABELS,
@@ -45,6 +51,19 @@ import {
 import { cn, formatDateTime } from "@/lib/format";
 
 const POLL_INTERVAL_MS = 2500;
+
+type WorkspaceTab = "report" | "graph" | "counterfactual" | "visual";
+
+const WORKSPACE_TABS: Array<{
+  id: WorkspaceTab;
+  label: string;
+  icon: typeof BrainCircuit;
+}> = [
+  { id: "report", label: "Report", icon: FlaskConical },
+  { id: "graph", label: "Evidence graph", icon: Network },
+  { id: "counterfactual", label: "What-if", icon: GitCompareArrows },
+  { id: "visual", label: "Visual inspection", icon: ImageIcon },
+];
 
 const ROW_TONES: Record<"neutral" | "success" | "danger" | "accent" | "warning", string> = {
   neutral: "border-neutral-700/40 bg-neutral-500/5 text-slate-300",
@@ -67,6 +86,7 @@ export default function InvestigationWorkspace({
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const [tab, setTab] = useState<WorkspaceTab>("report");
 
   useEffect(() => {
     let stale = false;
@@ -220,24 +240,90 @@ export default function InvestigationWorkspace({
             <AgentTimeline activities={job.agent_activity} />
             <StageHistory job={job} />
 
-            {report ? (
-              <ReportView report={report} evidenceById={evidenceById} />
-            ) : (
-              <section className="rounded-lg border border-dashed border-line px-5 py-8 text-center">
-                <p className="text-xs text-slate-400">
-                  {active
-                    ? "The multi-agent pipeline is still running. Findings will appear here when complete."
-                    : job.status === "failed"
-                      ? "No report was produced."
-                      : "No report available."}
-                </p>
-              </section>
+            <WorkspaceTabs tab={tab} onChange={setTab} />
+
+            {tab === "report" && (
+              <>
+                {report ? (
+                  <ReportView report={report} evidenceById={evidenceById} />
+                ) : (
+                  <section className="rounded-lg border border-dashed border-line px-5 py-8 text-center">
+                    <p className="text-xs text-slate-400">
+                      {active
+                        ? "The multi-agent pipeline is still running. Findings will appear here when complete."
+                        : job.status === "failed"
+                          ? "No report was produced."
+                          : "No report available."}
+                    </p>
+                  </section>
+                )}
+
+                <EvidenceTable evidence={evidence} active={active} />
+              </>
             )}
 
-            <EvidenceTable evidence={evidence} active={active} />
+            {tab === "graph" && (
+              <EvidenceGraphView investigationId={investigationId} />
+            )}
+
+            {tab === "counterfactual" && (
+              <CounterfactualPanel
+                investigationId={investigationId}
+                evidence={evidence}
+              />
+            )}
+
+            {tab === "visual" && (
+              <VisualInspectionPanel
+                incidentId={job.incident_id}
+                investigationId={investigationId}
+              />
+            )}
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+function WorkspaceTabs({
+  tab,
+  onChange,
+}: {
+  tab: WorkspaceTab;
+  onChange: (tab: WorkspaceTab) => void;
+}) {
+  return (
+    <div
+      role="tablist"
+      aria-label="Investigation views"
+      className="flex flex-wrap gap-1 rounded-lg border border-line bg-surface p-1"
+    >
+      {WORKSPACE_TABS.map((item) => {
+        const Icon = item.icon;
+        const selected = item.id === tab;
+        return (
+          <button
+            key={item.id}
+            type="button"
+            role="tab"
+            aria-selected={selected}
+            onClick={() => onChange(item.id)}
+            className={cn(
+              "inline-flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-2 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none",
+              selected
+                ? "bg-surface-raised text-white"
+                : "text-slate-400 hover:bg-surface-raised/60 hover:text-slate-200"
+            )}
+          >
+            <Icon
+              className={cn("h-3.5 w-3.5", selected ? "text-cyan-accent" : "text-slate-500")}
+              aria-hidden="true"
+            />
+            {item.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -344,6 +430,29 @@ interface ReportViewProps {
 function ReportView({ report, evidenceById }: ReportViewProps) {
   return (
     <section className="space-y-6" aria-label="Investigation report">
+      {report.counterfactual && (
+        <div className="flex items-start gap-2 rounded-lg border border-cyan-accent/30 bg-cyan-accent/5 px-4 py-3 text-xs text-slate-300">
+          <GitCompareArrows className="mt-0.5 h-3.5 w-3.5 shrink-0 text-cyan-accent" aria-hidden="true" />
+          <div>
+            <p className="font-medium text-white">
+              Counterfactual revision{" "}
+              <span className="font-mono text-cyan-accent">
+                {report.counterfactual.scenario_id}
+              </span>
+            </p>
+            <p className="mt-0.5 text-slate-400">
+              This report was produced with {report.counterfactual.excluded_evidence_ids.length}{" "}
+              evidence record
+              {report.counterfactual.excluded_evidence_ids.length === 1 ? "" : "s"} withheld from the
+              original investigation{" "}
+              <span className="font-mono">
+                {report.counterfactual.original_investigation_id}
+              </span>
+              .
+            </p>
+          </div>
+        </div>
+      )}
       <div className="rounded-lg border border-line bg-surface px-5 py-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-sm font-semibold text-white">Findings</h2>
@@ -405,6 +514,23 @@ function CriticPanel({ report }: { report: NonNullable<InvestigationJob["report"
       <ReviewList title="Alternative explanations" items={review.alternative_explanations} />
       {review.deterministic_findings.length > 0 && (
         <ReviewList title="Deterministic findings" items={review.deterministic_findings} tone="accent" />
+      )}
+      {review.excluded_evidence_reused.length > 0 && (
+        <div className="mt-3">
+          <p className="text-[11px] font-medium tracking-wide text-danger uppercase">
+            Excluded evidence referenced
+          </p>
+          <ul className="mt-1.5 space-y-1">
+            {review.excluded_evidence_reused.map((item, index) => (
+              <li
+                key={`${item}-${index}`}
+                className={cn("rounded border px-2 py-1.5 text-[11px] leading-relaxed", ROW_TONES.danger)}
+              >
+                {item}
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </div>
   );

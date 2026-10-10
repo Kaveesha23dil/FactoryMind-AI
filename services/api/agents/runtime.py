@@ -90,7 +90,12 @@ class AdkRuntime:
 
     # -- execution -------------------------------------------------------
 
-    async def run(self, spec: AgentSpec, prompt: str) -> dict[str, Any]:
+    async def run(
+        self,
+        spec: AgentSpec,
+        prompt: str,
+        image_parts: list["types.Part"] | None = None,
+    ) -> dict[str, Any]:
         agent = self.build_agent(spec)
         app_name = f"factorymind-{spec.name}"
         user_id = "investigation"
@@ -101,13 +106,14 @@ class AdkRuntime:
             app_name=app_name, user_id=user_id, session_id=session_id
         )
 
+        parts = [types.Part(text=prompt)]
+        if image_parts:
+            parts.extend(image_parts)
         try:
             async for event in runner.run_async(
                 user_id=user_id,
                 session_id=session_id,
-                new_message=types.Content(
-                    role="user", parts=[types.Part(text=prompt)]
-                ),
+                new_message=types.Content(role="user", parts=parts),
             ):
                 if event.error_message:
                     raise InvestigationProviderError(

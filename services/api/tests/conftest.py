@@ -141,6 +141,20 @@ _CRITIC_RESPONSE = {
     "revision_required": False,
 }
 
+_VISION_RESPONSE = {
+    "summary": "A worn cutting tool with edge discoloration is visible.",
+    "observations": [
+        {
+            "observation": "Visible wear and discoloration along the tool edge.",
+            "related_features": ["tool_wear_min"],
+            "severity_hint": "attention",
+        }
+    ],
+    "limitations": [
+        "Single view only; no scale reference; lighting may obscure fine cracks."
+    ],
+}
+
 
 def _as_json(payload: dict) -> str:
     import json
@@ -154,6 +168,7 @@ def default_scripted_responses() -> dict[str, str]:
         "knowledge_agent": _as_json(_KNOWLEDGE_RESPONSE),
         "investigation_agent": _as_json(_INVESTIGATION_RESPONSE),
         "critic_agent": _as_json(_CRITIC_RESPONSE),
+        "vision_agent": _as_json(_VISION_RESPONSE),
     }
 
 

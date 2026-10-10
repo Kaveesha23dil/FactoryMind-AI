@@ -26,6 +26,15 @@ import type {
   InvestigationStartResponse,
   InvestigationStatus,
 } from "@/types/investigation";
+import type { EvidenceGraph } from "@/types/evidenceGraph";
+import type {
+  CounterfactualListResponse,
+  CounterfactualScenario,
+} from "@/types/counterfactual";
+import type {
+  VisualEvidenceListResponse,
+  VisualEvidenceRecord,
+} from "@/types/visual";
 
 const DEFAULT_API_URL = "http://127.0.0.1:8000";
 
@@ -88,6 +97,10 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     );
   }
 
+  return handleResponse<T>(response);
+}
+
+export async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     let detail: unknown;
     try {
@@ -279,3 +292,83 @@ export const getInvestigationEvidence = (investigationId: string) =>
   apiFetch<EvidenceListResponse>(
     `/api/investigations/${encodeURIComponent(investigationId)}/evidence`
   );
+
+// --- Evidence graph ---------------------------------------------------------
+
+export const getEvidenceGraph = (investigationId: string) =>
+  apiFetch<EvidenceGraph>(
+    `/api/investigations/${encodeURIComponent(investigationId)}/graph`
+  );
+
+// --- Counterfactuals --------------------------------------------------------
+
+export const createCounterfactual = (
+  investigationId: string,
+  excludedEvidenceIds: string[],
+  rationale?: string | null
+) =>
+  apiFetch<CounterfactualScenario>(
+    `/api/investigations/${encodeURIComponent(investigationId)}/counterfactual`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        excluded_evidence_ids: excludedEvidenceIds,
+        rationale: rationale ?? null,
+      }),
+    }
+  );
+
+export const getCounterfactual = (scenarioId: string) =>
+  apiFetch<CounterfactualScenario>(
+    `/api/counterfactuals/${encodeURIComponent(scenarioId)}`
+  );
+
+export const getInvestigationCounterfactuals = (investigationId: string) =>
+  apiFetch<CounterfactualListResponse>(
+    `/api/investigations/${encodeURIComponent(investigationId)}/counterfactuals`
+  );
+
+// --- Visual inspection ------------------------------------------------------
+
+export const getIncidentImages = (incidentId: string) =>
+  apiFetch<VisualEvidenceListResponse>(
+    `/api/incidents/${encodeURIComponent(incidentId)}/images`
+  );
+
+export const getImage = (imageId: string) =>
+  apiFetch<VisualEvidenceRecord>(
+    `/api/images/${encodeURIComponent(imageId)}`
+  );
+
+export const analyzeImage = (imageId: string, investigationId?: string | null) =>
+  apiFetch<VisualEvidenceRecord>(
+    `/api/images/${encodeURIComponent(imageId)}/analyze`,
+    {
+      method: "POST",
+      body: JSON.stringify({ investigation_id: investigationId ?? null }),
+    }
+  );
+
+export async function uploadIncidentImage(
+  incidentId: string,
+  file: File
+): Promise<VisualEvidenceRecord> {
+  const form = new FormData();
+  form.append("file", file);
+  let response: Response;
+  try {
+    response = await fetch(
+      `${API_BASE_URL}/api/incidents/${encodeURIComponent(incidentId)}/images`,
+      { method: "POST", body: form, cache: "no-store" }
+    );
+  } catch {
+    throw new ApiError(
+      `Cannot reach the FactoryMind AI backend at ${API_BASE_URL}. Start the FastAPI server and try again.`,
+      "network"
+    );
+  }
+  return handleResponse<VisualEvidenceRecord>(response);
+}
+
+export const imageContentUrl = (imageId: string) =>
+  `${API_BASE_URL}/api/images/${encodeURIComponent(imageId)}/content`;

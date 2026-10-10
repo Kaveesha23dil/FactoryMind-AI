@@ -82,6 +82,24 @@ class InvestigationResult:
     evidence: list[dict[str, Any]]
 
 
+@dataclass
+class PreparedContext:
+    """A pre-built, deterministic reasoning context.
+
+    Normal investigations build this from the dataset tools; counterfactual
+    investigations build a *restricted* version (excluded measurements already
+    removed) so the agents never see the excluded data.
+    """
+
+    incident_context: dict[str, Any]
+    measurements: dict[str, Any]
+    anomaly: dict[str, Any]
+    baselines: dict[str, Any]
+    passages: list[dict[str, Any]]
+    evidence_records: list[dict[str, Any]]
+    counterfactual: dict[str, Any] | None = None
+
+
 def _utcnow_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -177,29 +195,44 @@ class Orchestrator:
         investigation_id: str,
         incident_id: str,
         reporter: ProgressReporter,
+        prepared: PreparedContext | None = None,
     ) -> InvestigationResult:
-        reporter.stage("collecting_evidence", "Loading incident and source data")
-        incident = self.incident_service.get_incident(incident_id)
-        measurements = get_incident_measurements(incident_id)
-        anomaly = get_anomaly_analysis(incident_id)
-        baselines = get_baseline_statistics(incident["machine_type"])
+        counterfactual: dict[str, Any] | None = None
+        if prepared is None:
+            reporter.stage("collecting_evidence", "Loading incident and source data")
+            incident = self.incident_service.get_incident(incident_id)
+            measurements = get_incident_measurements(incident_id)
+            anomaly = get_anomaly_analysis(incident_id)
+            baselines = get_baseline_statistics(incident["machine_type"])
 
-        passages = retrieve_knowledge(
-            _knowledge_query(anomaly), top_k=config.KNOWLEDGE_TOP_K
-        )
-        created_at = _utcnow_iso()
-        evidence_records = build_deterministic_evidence(
-            investigation_id=investigation_id,
-            incident=incident,
-            anomaly=anomaly,
-            passages=passages,
-            created_at=created_at,
-        )
-        catalog = evidence_catalog(evidence_records)
-        reporter.evidence(evidence_records)
+            passages = retrieve_knowledge(
+                _knowledge_query(anomaly), top_k=config.KNOWLEDGE_TOP_K
+            )
+            created_at = _utcnow_iso()
+            evidence_records = build_deterministic_evidence(
+                investigation_id=investigation_id,
+                incident=incident,
+                anomaly=anomaly,
+                passages=passages,
+                created_at=created_at,
+            )
+            catalog = evidence_catalog(evidence_records)
+            reporter.evidence(evidence_records)
 
-        incident_context = get_incident_context(incident_id)
-        incident_context["severity"] = anomaly["severity"]
+            incident_context = get_incident_context(incident_id)
+            incident_context["severity"] = anomaly["severity"]
+        else:
+            # Counterfactual: the restricted context was prepared upstream.
+            incident_context = prepared.incident_context
+            measurements = prepared.measurements
+            anomaly = prepared.anomaly
+            baselines = prepared.baselines
+            passages = prepared.passages
+            evidence_records = prepared.evidence_records
+            catalog = evidence_catalog(evidence_records)
+            counterfactual = prepared.counterfactual
+            reporter.evidence(evidence_records)
+
         base_context: dict[str, Any] = {
             "incident": incident_context,
             "measurements": measurements,
@@ -286,6 +319,7 @@ class Orchestrator:
             rejected=rejected,
             evidence_records=evidence_records,
             revision_count=revision_count,
+            counterfactual=counterfactual,
         )
         report["agent_activity"] = reporter.activity()
         return InvestigationResult(report=report, evidence=evidence_records)
@@ -337,6 +371,7 @@ class Orchestrator:
                             action=step,
                             rationale=f"Verification step for '{hypothesis.title}'.",
                             requires_human_approval=True,
+                            supporting_hypothesis_ids=[hypothesis.hypothesis_id],
                         )
                     )
         actions.append(
@@ -347,6 +382,7 @@ class Orchestrator:
                 ),
                 rationale="AI-assisted findings always require human verification.",
                 requires_human_approval=True,
+                supporting_hypothesis_ids=[],
             )
         )
         return actions[:MAX_RECOMMENDED_ACTIONS]
@@ -361,6 +397,7 @@ class Orchestrator:
         rejected: list[str],
         evidence_records: list[dict[str, Any]],
         revision_count: int,
+        counterfactual: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         rejected_unique = sorted(set(rejected))
         deterministic_findings: list[str] = []
@@ -369,6 +406,25 @@ class Orchestrator:
                 "Rejected nonexistent evidence references: "
                 + ", ".join(rejected_unique)
             )
+
+        excluded_evidence_reused: list[str] = []
+        if counterfactual:
+            excluded_ids = set(counterfactual.get("excluded_evidence_ids", []) or [])
+            raw_cited: set[str] = set()
+            for item in draft.get("hypotheses", []) or []:
+                raw_cited.update(item.get("supporting_evidence_ids", []) or [])
+                raw_cited.update(item.get("contradicting_evidence_ids", []) or [])
+            excluded_evidence_reused = sorted(excluded_ids & raw_cited)
+            if excluded_evidence_reused:
+                deterministic_findings.append(
+                    "Excluded evidence was reused in the draft and removed: "
+                    + ", ".join(excluded_evidence_reused)
+                )
+            else:
+                deterministic_findings.append(
+                    "Deterministic check: no excluded evidence was reused in the "
+                    "revised reasoning."
+                )
 
         critic_review = CriticReview(
             verification_outcome=critic_output.get("verification_outcome")
@@ -384,6 +440,7 @@ class Orchestrator:
             revision_required=bool(critic_output.get("revision_required"))
             or bool(rejected_unique),
             deterministic_findings=deterministic_findings,
+            excluded_evidence_reused=excluded_evidence_reused,
         )
 
         return {
@@ -403,6 +460,7 @@ class Orchestrator:
             "evidence_catalog": [record["evidence_id"] for record in evidence_records],
             "rejected_citations": rejected_unique,
             "revision_count": revision_count,
+            "counterfactual": counterfactual,
             "disclaimer": REPORT_DISCLAIMER,
         }
 
@@ -410,6 +468,7 @@ class Orchestrator:
 __all__ = [
     "Orchestrator",
     "InvestigationResult",
+    "PreparedContext",
     "InvestigationError",
     "InvestigationDisabledError",
     "ProgressReporter",

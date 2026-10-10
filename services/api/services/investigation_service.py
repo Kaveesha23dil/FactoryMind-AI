@@ -132,6 +132,23 @@ class InvestigationService:
         if active is not None:
             raise DuplicateInvestigationError(active["investigation_id"])
 
+        job = self.create_queued_investigation(incident_id)
+
+        investigation_id = job["investigation_id"]
+        if config.settings.investigation_async:
+            self.enqueue(investigation_id)
+        else:
+            # Synchronous mode (local/dev + tests): execute immediately so the
+            # caller observes a terminal state without a background thread.
+            self.run_job(investigation_id)
+        return self.get(investigation_id)
+
+    def create_queued_investigation(self, incident_id: str) -> dict:
+        """Persist a new queued investigation without duplicate prevention.
+
+        Used for counterfactual revisions, which legitimately run while the
+        original investigation already exists for the same incident.
+        """
         now = _utcnow_iso()
         job = {
             "investigation_id": self._new_id(),
@@ -153,25 +170,17 @@ class InvestigationService:
             "completed_at": None,
             "updated_at": now,
         }
-        try:
-            self.repository.insert(job)
-        except sqlite3.IntegrityError as exc:
-            existing = self.repository.find_active(incident_id)
-            raise DuplicateInvestigationError(
-                existing["investigation_id"] if existing else "unknown"
-            ) from exc
+        self.repository.insert(job)
+        return job
 
-        investigation_id = job["investigation_id"]
-        if config.settings.investigation_async:
-            self.enqueue(investigation_id)
-        else:
-            # Synchronous mode (local/dev + tests): execute immediately so the
-            # caller observes a terminal state without a background thread.
-            self.run_job(investigation_id)
-        return self.get(investigation_id)
+    def run_job(
+        self, investigation_id: str, prepared=None  # PreparedContext | None
+    ) -> dict:
+        """Execute an investigation. Idempotent: completed/running jobs are skipped.
 
-    def run_job(self, investigation_id: str) -> dict:
-        """Execute an investigation. Idempotent: completed/running jobs are skipped."""
+        ``prepared`` lets a counterfactual revision hand the orchestrator a
+        restricted reasoning context instead of rebuilding it from the dataset.
+        """
         job = self.repository.get(investigation_id)
         if job is None:
             raise InvestigationNotFoundError(investigation_id)
@@ -195,7 +204,12 @@ class InvestigationService:
             )
             reporter = _RepositoryReporter(self.repository, investigation_id)
             result = asyncio.run(
-                orchestrator.run(investigation_id, job["incident_id"], reporter)
+                orchestrator.run(
+                    investigation_id,
+                    job["incident_id"],
+                    reporter,
+                    prepared=prepared,
+                )
             )
             report = result.report
             self.repository.save_evidence(result.evidence)

@@ -69,6 +69,12 @@ class RobustZScoreDetector:
             else anomaly_score_threshold
         )
         self.min_group_size = config.MIN_GROUP_SIZE if min_group_size is None else min_group_size
+        for name in ("feature_z_threshold", "anomaly_score_threshold"):
+            value = getattr(self, name)
+            if not math.isfinite(value) or value <= 0:
+                raise ValueError(f"{name} must be finite and positive")
+        if self.min_group_size < 1:
+            raise ValueError("min_group_size must be positive")
         self.global_baselines: dict[str, BaselineStats] = {}
         self.group_baselines: dict[str, dict[str, BaselineStats]] = {}
         self._fitted = False
@@ -110,7 +116,11 @@ class RobustZScoreDetector:
         """Fit baselines from a training frame only."""
         from services.api import data
 
+        if frame.empty:
+            raise ValueError("Training data must not be empty")
         feature_rows = [data.extract_features(row) for _, row in frame.iterrows()]
+        for features in feature_rows:
+            self._validate_features(features)
 
         self.global_baselines = {}
         for key in self.feature_keys:
@@ -181,7 +191,7 @@ class RobustZScoreDetector:
             finite_observed = observed if math.isfinite(observed) else stats.median
             raw_z = (finite_observed - stats.median) / stats.scale
             if not math.isfinite(raw_z):
-                raw_z = config.MAX_ABS_ZSCORE if finite_observed > stats.median else 0.0
+                raw_z = math.copysign(config.MAX_ABS_ZSCORE, raw_z)
             z = float(max(-config.MAX_ABS_ZSCORE, min(config.MAX_ABS_ZSCORE, raw_z)))
             abs_z = abs(z)
             sum_squares += z * z
@@ -231,7 +241,7 @@ class RobustZScoreDetector:
             [c for c in contributions if c["is_anomalous"]],
             key=lambda c: c["abs_zscore"],
             reverse=True,
-        )[: config.MAX_FEATURE_CONTRIBUTIONS]
+        )
 
         return {
             "algorithm": self.algorithm,

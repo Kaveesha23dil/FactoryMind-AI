@@ -4,6 +4,20 @@ import type {
   TelemetryRecord,
   TelemetryResponse,
 } from "@/types/monitoring";
+import type {
+  AnomalyDetail,
+  AnomalyListResponse,
+  AnomalySummary,
+  EvaluationReport,
+  IncidentStatus,
+  Severity,
+} from "@/types/anomaly";
+import type {
+  Incident,
+  IncidentListResponse,
+  ScanRequest,
+  ScanResponse,
+} from "@/types/incident";
 
 const DEFAULT_API_URL = "http://127.0.0.1:8000";
 
@@ -16,13 +30,29 @@ export type ApiErrorKind = "network" | "http" | "invalid";
 export class ApiError extends Error {
   readonly status?: number;
   readonly kind: ApiErrorKind;
+  readonly detail?: unknown;
 
-  constructor(message: string, kind: ApiErrorKind, status?: number) {
+  constructor(
+    message: string,
+    kind: ApiErrorKind,
+    status?: number,
+    detail?: unknown
+  ) {
     super(message);
     this.name = "ApiError";
     this.kind = kind;
     this.status = status;
+    this.detail = detail;
   }
+}
+
+function extractMessage(detail: unknown, fallback: string): string {
+  if (typeof detail === "string") return detail;
+  if (detail && typeof detail === "object" && "message" in detail) {
+    const message = (detail as { message?: unknown }).message;
+    if (typeof message === "string") return message;
+  }
+  return fallback;
 }
 
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
@@ -45,10 +75,19 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
   }
 
   if (!response.ok) {
+    let detail: unknown;
+    try {
+      const body = (await response.json()) as { detail?: unknown };
+      detail = body?.detail;
+    } catch {
+      detail = undefined;
+    }
+    const fallback = `The backend responded with HTTP ${response.status} ${response.statusText}.`;
     throw new ApiError(
-      `The backend responded with HTTP ${response.status} ${response.statusText}.`,
+      extractMessage(detail, fallback),
       "http",
-      response.status
+      response.status,
+      detail
     );
   }
 
@@ -94,3 +133,89 @@ export function getTelemetry({
 
 export const getTelemetryRecord = (recordId: number) =>
   apiFetch<TelemetryRecord>(`/api/telemetry/${recordId}`);
+
+export const getAnomalySummary = () =>
+  apiFetch<AnomalySummary>("/api/anomalies/summary");
+
+export const getEvaluationReport = () =>
+  apiFetch<EvaluationReport>("/api/anomalies/evaluation");
+
+export interface AnomalyQuery {
+  limit?: number;
+  offset?: number;
+  severity?: Severity | null;
+  minSeverity?: Exclude<Severity, "normal"> | null;
+  machineType?: string | null;
+}
+
+export function getAnomalies({
+  limit = 20,
+  offset = 0,
+  severity = null,
+  minSeverity = null,
+  machineType = null,
+}: AnomalyQuery = {}) {
+  const params = new URLSearchParams();
+  params.set("limit", String(limit));
+  params.set("offset", String(offset));
+  if (severity) params.set("severity", severity);
+  if (minSeverity) params.set("min_severity", minSeverity);
+  if (machineType) params.set("machine_type", machineType);
+  return apiFetch<AnomalyListResponse>(`/api/anomalies?${params.toString()}`);
+}
+
+export const getAnomaly = (recordId: number) =>
+  apiFetch<AnomalyDetail>(`/api/anomalies/${recordId}`);
+
+export interface IncidentQuery {
+  limit?: number;
+  offset?: number;
+  status?: IncidentStatus | null;
+  severity?: Severity | null;
+}
+
+export function getIncidents({
+  limit = 20,
+  offset = 0,
+  status = null,
+  severity = null,
+}: IncidentQuery = {}) {
+  const params = new URLSearchParams();
+  params.set("limit", String(limit));
+  params.set("offset", String(offset));
+  if (status) params.set("status", status);
+  if (severity) params.set("severity", severity);
+  return apiFetch<IncidentListResponse>(`/api/incidents?${params.toString()}`);
+}
+
+export const getIncident = (incidentId: string) =>
+  apiFetch<Incident>(`/api/incidents/${encodeURIComponent(incidentId)}`);
+
+export const createIncident = (recordId: number, note?: string) =>
+  apiFetch<Incident>("/api/incidents", {
+    method: "POST",
+    body: JSON.stringify({ record_id: recordId, note: note ?? null }),
+  });
+
+export const updateIncidentStatus = (
+  incidentId: string,
+  status: IncidentStatus,
+  note?: string
+) =>
+  apiFetch<Incident>(
+    `/api/incidents/${encodeURIComponent(incidentId)}/status`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ status, note: note ?? null }),
+    }
+  );
+
+export const scanIncidents = (payload: ScanRequest) =>
+  apiFetch<ScanResponse>("/api/incidents/scan", {
+    method: "POST",
+    body: JSON.stringify({
+      min_severity: payload.min_severity,
+      max_incidents: payload.max_incidents ?? 25,
+      dry_run: payload.dry_run ?? false,
+    }),
+  });

@@ -129,3 +129,26 @@ def test_severity_bands():
     assert detector._severity_for(6.0) == "high"
     assert detector._severity_for(8.0) == "critical"
     assert detector._severity_for(100.0) == "critical"
+
+
+@pytest.mark.parametrize("threshold", [0, -1, float("nan"), float("inf")])
+def test_invalid_threshold_rejected(threshold):
+    with pytest.raises(ValueError, match="finite and positive"):
+        _detector(anomaly_score_threshold=threshold)
+
+
+def test_training_rejects_empty_and_nonfinite_data():
+    frame = make_feature_frame(torque=[10, 20, 30], wear=[1, 2, 3])
+    with pytest.raises(ValueError, match="empty"):
+        _detector().fit(frame.iloc[:0])
+    frame.loc[0, "Torque [Nm]"] = float("nan")
+    with pytest.raises(ValueError, match="not finite"):
+        _detector().fit(frame)
+
+
+def test_negative_overflow_retains_anomaly_direction():
+    detector = _detector().fit(make_feature_frame(torque=[7] * 3, wear=[1, 2, 3]))
+    result = detector.score({"torque_nm": -1e308, "tool_wear_min": 2})
+    torque = next(f for f in result["features"] if f["feature"] == "torque_nm")
+    assert torque["robust_zscore"] == -config.MAX_ABS_ZSCORE
+    assert result["is_anomaly"]

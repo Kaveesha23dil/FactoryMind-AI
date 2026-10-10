@@ -11,6 +11,14 @@ from services.api.schemas.anomaly import FeatureContribution
 IncidentStatus = Literal["open", "under_review", "resolved"]
 
 
+class DetectionConfig(BaseModel):
+    model_config = ConfigDict(allow_inf_nan=False)
+    threshold: float = Field(gt=0)
+    feature_z_threshold: float = Field(gt=0)
+    baseline_fit_sample_count: int = Field(ge=1)
+    split_seed: int
+
+
 class IncidentCreate(BaseModel):
     model_config = ConfigDict(allow_inf_nan=False)
 
@@ -51,6 +59,7 @@ class Incident(BaseModel):
     created_at: str
     updated_at: str
     timeline: list[IncidentTimelineEntry]
+    detection_config: DetectionConfig | None = None
     ground_truth_used_for_detection: bool = False
 
 

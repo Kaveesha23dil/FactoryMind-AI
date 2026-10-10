@@ -153,3 +153,36 @@ def test_investigation_payload_excludes_ground_truth(tmp_path, anomaly_ids):
     assert "ground_truth_failure" not in serialized
     assert payload["ground_truth_used_for_detection"] is False
     assert payload["dataset_sample_id"] == anomaly_ids[5]
+
+
+def test_snapshot_retains_all_contributions_and_thresholds(tmp_path, anomaly_ids):
+    service = _service(tmp_path)
+    incident = service.create_incident(anomaly_ids[0])
+    assert len(incident["evidence"]) == len(get_engine().detector.feature_keys)
+    assert incident["detection_config"]["feature_z_threshold"] == get_engine().detector.feature_z_threshold
+    reopened = _service(tmp_path).get_incident(incident["incident_id"])
+    assert reopened["detection_config"] == incident["detection_config"]
+
+
+def test_stale_status_update_does_not_append_event(tmp_path, anomaly_ids):
+    service = _service(tmp_path)
+    incident = service.create_incident(anomaly_ids[0])
+    service.update_status(incident["incident_id"], "resolved")
+    with pytest.raises(InvalidTransitionError, match="changed"):
+        service.repository.update_status(incident["incident_id"], "under_review", {
+            "incident_id": incident["incident_id"], "expected_status": "open",
+            "timestamp": incident["created_at"], "status": "under_review",
+        })
+    assert len(service.get_incident(incident["incident_id"])["timeline"]) == 2
+
+
+def test_legacy_schema_migration_preserves_incident(tmp_path, anomaly_ids):
+    service = _service(tmp_path)
+    incident = service.create_incident(anomaly_ids[0])
+    with service.repository.database.connect() as connection:
+        connection.execute("ALTER TABLE incidents DROP COLUMN detection_config")
+        connection.commit()
+    reopened = _service(tmp_path).get_incident(incident["incident_id"])
+    assert reopened["detection_config"] is None
+    assert reopened["evidence"] == incident["evidence"]
+    assert reopened["timeline"] == incident["timeline"]

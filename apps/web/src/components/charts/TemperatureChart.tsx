@@ -3,8 +3,8 @@
 import {
   CartesianGrid,
   Legend,
-  Line,
-  LineChart,
+  Scatter,
+  ScatterChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -22,8 +22,8 @@ export default function TemperatureChart({
   records,
   maxSamples = 300,
 }: TemperatureChartProps) {
-  const data = records.slice(0, maxSamples).map((record, index) => ({
-    sample: index + 1,
+  const data = records.slice(0, maxSamples).map((record) => ({
+    sample: record.record_id,
     air: record.air_temperature_c,
     process: record.process_temperature_c,
   }));
@@ -39,18 +39,19 @@ export default function TemperatureChart({
   return (
     <div className="h-72 w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart
-          data={data}
+        <ScatterChart
           margin={{ top: 8, right: 12, bottom: 8, left: 4 }}
         >
           <CartesianGrid stroke="#1E2A43" strokeDasharray="3 3" />
           <XAxis
             dataKey="sample"
+            type="number"
+            name="Dataset record"
             tick={{ fontSize: 11, fill: "#94A3B8" }}
             tickLine={{ stroke: "#1E2A43" }}
             axisLine={{ stroke: "#1E2A43" }}
             label={{
-              value: "Dataset record (file row)",
+              value: "Dataset observation ID (not time)",
               position: "insideBottom",
               offset: -2,
               fontSize: 11,
@@ -59,6 +60,10 @@ export default function TemperatureChart({
             tickFormatter={(value) => formatDecimal(Number(value), 0)}
           />
           <YAxis
+            dataKey="temperature"
+            type="number"
+            name="Temperature"
+            unit="°C"
             tick={{ fontSize: 11, fill: "#94A3B8" }}
             tickLine={{ stroke: "#1E2A43" }}
             axisLine={{ stroke: "#1E2A43" }}
@@ -90,27 +95,19 @@ export default function TemperatureChart({
             height={28}
             wrapperStyle={{ fontSize: 12 }}
           />
-          <Line
+          <Scatter
             name="Air temperature"
-            dataKey="air"
-            type="monotone"
-            stroke="#38BDF8"
-            strokeWidth={2}
-            dot={false}
-            activeDot={{ r: 3 }}
+            data={data.map((sample) => ({ sample: sample.sample, temperature: sample.air }))}
+            fill="#38BDF8"
             isAnimationActive={false}
           />
-          <Line
+          <Scatter
             name="Process temperature"
-            dataKey="process"
-            type="monotone"
-            stroke="#F59E0B"
-            strokeWidth={2}
-            dot={false}
-            activeDot={{ r: 3 }}
+            data={data.map((sample) => ({ sample: sample.sample, temperature: sample.process }))}
+            fill="#F59E0B"
             isAnimationActive={false}
           />
-        </LineChart>
+        </ScatterChart>
       </ResponsiveContainer>
     </div>
   );

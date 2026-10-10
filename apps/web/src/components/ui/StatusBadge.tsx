@@ -1,6 +1,11 @@
 import { cn } from "@/lib/format";
 
-export type BadgeTone = "neutral" | "success" | "danger" | "accent";
+export type BadgeTone =
+  | "neutral"
+  | "success"
+  | "danger"
+  | "accent"
+  | "warning";
 
 interface StatusBadgeProps {
   label: string;
@@ -14,6 +19,7 @@ const TONE_STYLES: Record<BadgeTone, string> = {
   success: "border-success/30 bg-success/10 text-success",
   danger: "border-danger/30 bg-danger/10 text-danger",
   accent: "border-cyan-accent/30 bg-cyan-accent/10 text-cyan-accent",
+  warning: "border-warning/30 bg-warning/10 text-warning",
 };
 
 export default function StatusBadge({
@@ -37,6 +43,7 @@ export default function StatusBadge({
             tone === "success" && "bg-success",
             tone === "danger" && "bg-danger",
             tone === "accent" && "bg-cyan-accent",
+            tone === "warning" && "bg-warning",
             tone === "neutral" && "bg-slate-400"
           )}
           aria-hidden="true"

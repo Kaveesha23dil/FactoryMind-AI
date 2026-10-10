@@ -8,6 +8,7 @@ business logic. Values can be overridden with environment variables.
 from __future__ import annotations
 
 import os
+import math
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -23,9 +24,12 @@ def _env_float(name: str, default: float) -> float:
     if raw is None or raw.strip() == "":
         return default
     try:
-        return float(raw)
+        value = float(raw)
     except ValueError:
-        return default
+        raise ValueError(f"{name} must be a finite positive number") from None
+    if not math.isfinite(value) or value <= 0:
+        raise ValueError(f"{name} must be a finite positive number")
+    return value
 
 
 def _env_int(name: str, default: int) -> int:

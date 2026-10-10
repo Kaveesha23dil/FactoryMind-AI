@@ -112,3 +112,18 @@ def test_investigation_payload_endpoint(client, isolated_incident_store, anomaly
     body = response.json()
     assert body["ground_truth_used_for_detection"] is False
     assert "ground_truth_failure" not in str(body).lower()
+
+
+def test_anomaly_results_reflect_incident_status(client, isolated_incident_store, anomaly_ids):
+    record_id = anomaly_ids[0]
+    created = client.post("/api/incidents", json={"record_id": record_id})
+    assert created.status_code == 201
+
+    detail = client.get(f"/api/anomalies/{record_id}").json()
+    assert detail["incident_status"] == "open"
+    assert detail["incident_id"] == created.json()["incident_id"]
+
+    listing = client.get("/api/anomalies", params={"limit": 200}).json()
+    match = next(r for r in listing["records"] if r["record_id"] == record_id)
+    assert match["incident_status"] == "open"
+    assert match["incident_id"] == created.json()["incident_id"]

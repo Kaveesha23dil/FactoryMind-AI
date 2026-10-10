@@ -36,11 +36,18 @@ const ROADMAP: RoadmapItem[] = [
     status: "available",
   },
   {
+    href: "/anomalies",
+    title: "Anomaly Monitoring",
+    description:
+      "Unsupervised anomaly detection with severity ranking, feature evidence, and held-out evaluation.",
+    status: "available",
+  },
+  {
     href: "/incidents",
     title: "Incidents",
     description:
-      "Anomaly detection and incident creation from monitoring signals.",
-    status: "planned",
+      "Incident queue with severity, status workflows, and full transition history.",
+    status: "available",
   },
   {
     href: "/investigations",
@@ -258,7 +265,7 @@ export default function Overview() {
             FactoryMind AI is built in phases. Available features are live;
             planned features are not implemented yet.
           </p>
-          <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+          <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
             {ROADMAP.map((item) => (
               <Link
                 key={item.href}

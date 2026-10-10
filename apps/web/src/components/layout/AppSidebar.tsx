@@ -10,6 +10,7 @@ import {
   Factory,
   LayoutDashboard,
   Menu,
+  ScanSearch,
   Settings,
   Wrench,
   X,
@@ -26,7 +27,8 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { href: "/overview", label: "Overview", icon: LayoutDashboard },
   { href: "/monitoring", label: "Machine Monitoring", icon: Activity },
-  { href: "/incidents", label: "Incidents", icon: AlertTriangle, comingSoon: true },
+  { href: "/anomalies", label: "Anomaly Monitoring", icon: ScanSearch },
+  { href: "/incidents", label: "Incidents", icon: AlertTriangle },
   { href: "/investigations", label: "AI Investigations", icon: Bot, comingSoon: true },
   { href: "/maintenance", label: "Maintenance", icon: Wrench, comingSoon: true },
   { href: "/settings", label: "Settings", icon: Settings, comingSoon: true },
@@ -110,7 +112,9 @@ export default function AppSidebar() {
           </p>
           <ul className="space-y-1">
             {NAV_ITEMS.map((item) => {
-              const active = pathname === item.href;
+              const active =
+                pathname === item.href ||
+                pathname.startsWith(`${item.href}/`);
               const Icon = item.icon;
               return (
                 <li key={item.href}>
@@ -148,7 +152,7 @@ export default function AppSidebar() {
         <div className="border-t border-line px-5 py-4 text-[11px] leading-relaxed text-slate-500">
           AI4I 2020 dataset integration
           <br />
-          Step 2 of the FactoryMind AI roadmap
+          Step 3 of the FactoryMind AI roadmap
         </div>
       </aside>
     </>

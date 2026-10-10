@@ -39,6 +39,24 @@ class BaselineStatsSchema(BaseModel):
     degenerate: bool
 
 
+class ScoreBin(BaseModel):
+    model_config = ConfigDict(allow_inf_nan=False)
+
+    bin_start: float
+    bin_end: float
+    count: int
+
+
+class ScoreStats(BaseModel):
+    model_config = ConfigDict(allow_inf_nan=False)
+
+    min: float
+    median: float
+    mean: float
+    max: float
+    p95: float
+
+
 class AnomalyDetail(BaseModel):
     model_config = ConfigDict(allow_inf_nan=False)
 
@@ -53,6 +71,8 @@ class AnomalyDetail(BaseModel):
     feature_z_threshold: float
     anomalous_features: list[FeatureContribution]
     features: list[FeatureContribution]
+    incident_status: str | None = None
+    incident_id: str | None = None
     ground_truth_failure: bool = Field(
         description="Dataset ground-truth label, shown for historical comparison only."
     )
@@ -72,6 +92,8 @@ class AnomalyListItem(BaseModel):
     is_anomaly: bool
     main_anomalous_feature: str | None
     anomalous_feature_count: int
+    incident_status: str | None = None
+    incident_id: str | None = None
     ground_truth_failure: bool
     ground_truth_failure_types: list[str]
     ground_truth_used_for_detection: bool = False
@@ -101,4 +123,6 @@ class AnomalySummary(BaseModel):
     feature_z_threshold: float
     baseline_fit_sample_count: int
     feature_baselines: dict[str, BaselineStatsSchema]
+    score_histogram: list[ScoreBin]
+    score_stats: ScoreStats
     ground_truth_used_for_detection: bool = False

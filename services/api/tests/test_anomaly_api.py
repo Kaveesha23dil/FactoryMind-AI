@@ -17,6 +17,10 @@ def test_summary_shape(client):
     assert body["ground_truth_used_for_detection"] is False
     assert set(body["severity_distribution"]) == set(config.SEVERITY_ORDER)
     assert math.isfinite(body["threshold"])
+    assert len(body["score_histogram"]) == 20
+    assert sum(bucket["count"] for bucket in body["score_histogram"]) == 10_000
+    assert any(bucket["bin_start"] == body["threshold"] for bucket in body["score_histogram"])
+    assert body["score_stats"]["max"] > 0
 
 
 def test_list_pagination(client):
@@ -53,6 +57,7 @@ def test_detail_and_not_found(client):
     assert body["record_id"] == record_id
     assert body["ground_truth_used_for_detection"] is False
     assert body["anomalous_features"]
+    assert "incident_status" in body
     assert client.get("/api/anomalies/999999999").status_code == 404
 
 

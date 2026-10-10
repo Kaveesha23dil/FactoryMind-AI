@@ -11,6 +11,8 @@ from __future__ import annotations
 import logging
 import threading
 
+import numpy as np
+
 from services.api import data
 from services.api.core import config
 from services.api.services.anomaly_detector import RobustZScoreDetector
@@ -33,6 +35,8 @@ class AnomalyEngine:
         self._results: dict[int, dict] = {}
         self._anomalies: list[dict] = []
         self._severity_counts: dict[str, int] = {}
+        self._score_histogram: list[dict] = []
+        self._score_stats: dict = {}
         self._built = False
 
     # -- lifecycle -------------------------------------------------------
@@ -47,6 +51,7 @@ class AnomalyEngine:
         results: dict[int, dict] = {}
         anomalies: list[dict] = []
         severity_counts = {name: 0 for name in config.SEVERITY_ORDER}
+        all_scores: list[float] = []
 
         for _, row in data.get_dataset().iterrows():
             record_id = int(row["UDI"])
@@ -65,6 +70,7 @@ class AnomalyEngine:
             ]
             results[record_id] = result
             severity_counts[result["severity"]] += 1
+            all_scores.append(result["anomaly_score"])
             if result["is_anomaly"]:
                 anomalies.append(result)
 
@@ -72,6 +78,9 @@ class AnomalyEngine:
         self._results = results
         self._anomalies = anomalies
         self._severity_counts = severity_counts
+        self._score_histogram, self._score_stats = self._build_score_distribution(
+            np.asarray(all_scores, dtype=float), threshold=self.detector.anomaly_score_threshold
+        )
         self._built = True
         logger.info(
             "Anomaly engine built: %d observations, %d anomalies, threshold=%.3f",
@@ -84,6 +93,36 @@ class AnomalyEngine:
     @property
     def is_built(self) -> bool:
         return self._built
+
+    @staticmethod
+    def _build_score_distribution(scores: np.ndarray, bins: int = 20, threshold: float | None = None):
+        if scores.size == 0:
+            return [], {}
+        upper = float(scores.max())
+        if upper <= 0:
+            upper = 1.0
+        edges = np.linspace(0.0, upper, bins + 1)
+        if threshold is not None and 0 < threshold < upper:
+            nearest = int(np.argmin(np.abs(edges[1:-1] - threshold))) + 1
+            edges[nearest] = threshold
+            edges.sort()
+        counts, _ = np.histogram(scores, bins=edges)
+        histogram = [
+            {
+                "bin_start": round(float(edges[i]), 4),
+                "bin_end": round(float(edges[i + 1]), 4),
+                "count": int(counts[i]),
+            }
+            for i in range(len(counts))
+        ]
+        stats = {
+            "min": round(float(scores.min()), 4),
+            "median": round(float(np.median(scores)), 4),
+            "mean": round(float(scores.mean()), 4),
+            "max": round(upper, 4),
+            "p95": round(float(np.percentile(scores, 95)), 4),
+        }
+        return histogram, stats
 
     # -- queries ---------------------------------------------------------
 
@@ -104,6 +143,8 @@ class AnomalyEngine:
                 key: stats.to_dict()
                 for key, stats in self.detector.global_baselines.items()
             },
+            "score_histogram": self._score_histogram,
+            "score_stats": self._score_stats,
             "ground_truth_used_for_detection": False,
         }
 
@@ -158,7 +199,7 @@ class AnomalyEngine:
     @staticmethod
     def _anomaly_view(item: dict) -> dict:
         """Compact view for list endpoints."""
-        top = item["anomalous_features"][0]["feature"] if item["anomalous_features"] else None
+        top = item["features"][0]["feature"] if item["features"] else None
         return {
             "record_id": item["record_id"],
             "machine_type": item["machine_type"],

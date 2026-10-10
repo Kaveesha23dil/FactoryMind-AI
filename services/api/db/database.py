@@ -62,6 +62,9 @@ class Database:
         with self.connect() as connection:
             for statement in SCHEMA_STATEMENTS:
                 connection.execute(statement)
+            columns = {row["name"] for row in connection.execute("PRAGMA table_info(incidents)")}
+            if "detection_config" not in columns:
+                connection.execute("ALTER TABLE incidents ADD COLUMN detection_config TEXT")
             connection.commit()
 
     @contextmanager

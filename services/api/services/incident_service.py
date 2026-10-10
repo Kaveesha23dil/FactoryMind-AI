@@ -86,6 +86,9 @@ class IncidentRepository(ABC):
     @abstractmethod
     def events(self, incident_id: str) -> list[dict]: ...
 
+    @abstractmethod
+    def active_record_statuses(self, record_ids: list[int]) -> dict[int, dict]: ...
+
 
 class SqliteIncidentRepository(IncidentRepository):
     def __init__(self, database: Database | None = None) -> None:
@@ -111,6 +114,7 @@ class SqliteIncidentRepository(IncidentRepository):
             "note": row["note"],
             "created_at": row["created_at"],
             "updated_at": row["updated_at"],
+            "detection_config": json.loads(row["detection_config"]) if row["detection_config"] else None,
         }
 
     def insert(self, incident: dict, event: dict) -> None:
@@ -120,8 +124,8 @@ class SqliteIncidentRepository(IncidentRepository):
                 INSERT INTO incidents (
                     incident_id, record_id, product_id, machine_type, algorithm,
                     anomaly_score, severity, status, source_measurements,
-                    evidence, explanations, note, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    evidence, explanations, note, created_at, updated_at, detection_config
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     incident["incident_id"],
@@ -138,6 +142,7 @@ class SqliteIncidentRepository(IncidentRepository):
                     incident["note"],
                     incident["created_at"],
                     incident["updated_at"],
+                    json.dumps(incident["detection_config"], allow_nan=False),
                 ),
             )
             self._insert_event(connection, event)
@@ -207,10 +212,12 @@ class SqliteIncidentRepository(IncidentRepository):
 
     def update_status(self, incident_id: str, status: str, event: dict) -> None:
         with self.database.connect() as connection:
-            connection.execute(
-                "UPDATE incidents SET status = ?, updated_at = ? WHERE incident_id = ?",
-                (status, event["timestamp"], incident_id),
+            result = connection.execute(
+                "UPDATE incidents SET status = ?, updated_at = ? WHERE incident_id = ? AND status = ?",
+                (status, event["timestamp"], incident_id, event["expected_status"]),
             )
+            if result.rowcount != 1:
+                raise InvalidTransitionError("Incident status changed; refresh before retrying")
             self._insert_event(connection, event)
             connection.commit()
 
@@ -227,6 +234,31 @@ class SqliteIncidentRepository(IncidentRepository):
             {"status": row["status"], "note": row["note"], "timestamp": row["timestamp"]}
             for row in rows
         ]
+
+    def active_record_statuses(self, record_ids: list[int]) -> dict[int, dict]:
+        if not record_ids:
+            return {}
+        placeholders = ",".join("?" for _ in record_ids)
+        with self.database.connect() as connection:
+            rows = connection.execute(
+                f"""
+                SELECT incident_id, record_id, status, severity FROM incidents
+                WHERE status != 'resolved' AND record_id IN ({placeholders})
+                ORDER BY created_at DESC
+                """,
+                record_ids,
+            ).fetchall()
+        statuses: dict[int, dict] = {}
+        for row in rows:
+            statuses.setdefault(
+                int(row["record_id"]),
+                {
+                    "incident_id": row["incident_id"],
+                    "status": row["status"],
+                    "severity": row["severity"],
+                },
+            )
+        return statuses
 
 
 class IncidentService:
@@ -253,13 +285,14 @@ class IncidentService:
         return f"{config.INCIDENT_ID_PREFIX}{uuid.uuid4().hex[:10].upper()}"
 
     def _build_evidence(self, anomaly: dict) -> tuple[list[dict], list[str]]:
-        evidence = anomaly["anomalous_features"]
-        explanations = [feature["explanation"] for feature in evidence]
+        evidence = anomaly["features"]
+        flagged = anomaly["anomalous_features"]
+        explanations = [feature["explanation"] for feature in flagged]
         summary = (
             f"Anomaly score {anomaly['anomaly_score']:.2f} "
             f"({anomaly['severity']}) exceeds the configured threshold "
             f"{anomaly['threshold']:.2f}; "
-            f"{len(evidence)} feature(s) exceed the per-feature z-score limit "
+            f"{sum(feature['is_anomalous'] for feature in evidence)} feature(s) exceed the per-feature z-score limit "
             f"{anomaly['feature_z_threshold']:.2f}."
         )
         return evidence, [summary, *explanations]
@@ -303,6 +336,12 @@ class IncidentService:
             "note": note,
             "created_at": now,
             "updated_at": now,
+            "detection_config": {
+                "threshold": anomaly["threshold"],
+                "feature_z_threshold": anomaly["feature_z_threshold"],
+                "baseline_fit_sample_count": len(engine.train_frame),
+                "split_seed": config.RANDOM_SEED,
+            },
         }
         event = {"incident_id": incident["incident_id"], "status": "open", "note": note, "timestamp": now}
 
@@ -324,6 +363,10 @@ class IncidentService:
         incident["timeline"] = self.repository.events(incident_id)
         incident["ground_truth_used_for_detection"] = False
         return incident
+
+    def status_map(self, record_ids: list[int]) -> dict[int, dict]:
+        """Map each record id to its active incident (status + id), if any."""
+        return self.repository.active_record_statuses(record_ids)
 
     def list_incidents(
         self,
@@ -373,6 +416,7 @@ class IncidentService:
             "status": new_status,
             "note": note,
             "timestamp": _utcnow_iso(),
+            "expected_status": current,
         }
         try:
             self.repository.update_status(incident_id, new_status, event)
@@ -424,7 +468,11 @@ class IncidentService:
             "anomaly_score": incident["anomaly_score"],
             "severity": incident["severity"],
             "sensor_measurements": incident["source_measurements"],
-            "anomalous_features": incident["evidence"],
+            "anomalous_features": [feature for feature in incident["evidence"] if feature["is_anomalous"]],
+            "algorithm_findings": {
+                "features": incident["evidence"],
+                "detection_config": incident["detection_config"],
+            },
             "detection_explanations": incident["explanations"],
             "source_metadata": {
                 "dataset": config.DATASET_NAME,

@@ -6,6 +6,8 @@ import { ExternalLink, RefreshCw } from "lucide-react";
 import { getIncidents } from "@/lib/api";
 import type { IncidentListResponse } from "@/types/incident";
 import type { IncidentStatus, Severity } from "@/types/anomaly";
+import TablePagination from "@/components/ui/TablePagination";
+import SeverityFilterControl from "@/components/ui/SeverityFilter";
 import StatusBadge from "@/components/ui/StatusBadge";
 import {
   EmptyState,
@@ -18,7 +20,7 @@ import {
   SEVERITY_LABELS,
   SEVERITY_TONE,
 } from "@/lib/severity";
-import { cn, formatDateTime, formatDecimal, formatNumber } from "@/lib/format";
+import { cn, formatDateTime, formatDecimal } from "@/lib/format";
 
 const PAGE_SIZE = 20;
 
@@ -73,9 +75,6 @@ export default function IncidentTable({ refreshToken = 0 }: IncidentTableProps) 
     setInternalRefresh((value) => value + 1);
   };
 
-  const totalPages = data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1;
-  const rangeStart = data && data.total > 0 ? page * PAGE_SIZE + 1 : 0;
-  const rangeEnd = data ? Math.min((page + 1) * PAGE_SIZE, data.total) : 0;
 
   return (
     <section className="rounded-lg border border-line bg-surface">
@@ -125,28 +124,13 @@ export default function IncidentTable({ refreshToken = 0 }: IncidentTableProps) 
             </select>
           </div>
 
-          <div className="flex items-center gap-2">
-            <label htmlFor="incident-severity-filter" className="text-xs text-slate-500">
-              Severity
-            </label>
-            <select
-              id="incident-severity-filter"
-              value={severity}
-              onChange={(event) => {
-                setLoading(true);
-                setError(null);
-                setSeverity(event.target.value as SeverityFilter);
-                setPage(0);
-              }}
-              className="rounded-md border border-line bg-surface-raised px-3 py-2 text-xs text-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none"
-            >
-              <option value="all">All severities</option>
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-              <option value="critical">Critical</option>
-            </select>
-          </div>
+          <SeverityFilterControl id="incidents-severity-filter" value={severity}
+            onChange={(value) => {
+              setLoading(true);
+              setError(null);
+              setSeverity(value);
+              setPage(0);
+            }} />
         </div>
       </div>
 
@@ -255,39 +239,12 @@ export default function IncidentTable({ refreshToken = 0 }: IncidentTableProps) 
             </table>
           </div>
 
-          <div className="flex flex-col gap-3 border-t border-line px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-[11px] text-slate-500">
-              Showing {formatNumber(rangeStart)}–{formatNumber(rangeEnd)} of{" "}
-              {formatNumber(data.total)} incidents · page {page + 1} of{" "}
-              {totalPages}
-            </p>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setLoading(true);
-                  setError(null);
-                  setPage(Math.max(0, page - 1));
-                }}
-                disabled={page === 0}
-                className="rounded-md border border-line bg-surface-raised px-3 py-1.5 text-xs font-medium text-slate-200 transition-colors hover:bg-surface focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Previous
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setLoading(true);
-                  setError(null);
-                  setPage(Math.min(totalPages - 1, page + 1));
-                }}
-                disabled={page >= totalPages - 1}
-                className="rounded-md border border-line bg-surface-raised px-3 py-1.5 text-xs font-medium text-slate-200 transition-colors hover:bg-surface focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Next
-              </button>
-            </div>
-          </div>
+          <TablePagination page={page} pageSize={PAGE_SIZE} total={data.total} noun="incidents"
+            onPageChange={(nextPage) => {
+              setLoading(true);
+              setError(null);
+              setPage(nextPage);
+            }} />
         </>
       )}
     </section>

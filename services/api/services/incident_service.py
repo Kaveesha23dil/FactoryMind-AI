@@ -424,7 +424,8 @@ class IncidentService:
             # e.g. reopening a resolved incident while another active one exists.
             raise DuplicateIncidentError("another active incident") from exc
 
-        logger.info("Incident %s transitioned %s -> %s", incident_id, current, new_status)
+        # The durable timeline holds IDs and statuses; do not log request-derived text.
+        logger.info("Incident status updated")
         return self.get_incident(incident_id)
 
     def scan(

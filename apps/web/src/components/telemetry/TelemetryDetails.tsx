@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef } from "react";
 import { BrainCircuit, X } from "lucide-react";
 import type { FailureCode, TelemetryRecord } from "@/types/monitoring";
 import { FAILURE_CATEGORY_LABELS } from "@/lib/failureLabels";
+import Modal from "@/components/ui/Modal";
 import StatusBadge from "@/components/ui/StatusBadge";
 import { cn, formatDecimal, formatNumber } from "@/lib/format";
 
@@ -22,24 +22,8 @@ export default function TelemetryDetails({
   record,
   onClose,
 }: TelemetryDetailsProps) {
-  const panelRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!record) return;
 
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    panelRef.current?.focus();
-
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [record, onClose]);
 
   if (!record) return null;
 
@@ -69,20 +53,8 @@ export default function TelemetryDetails({
   ];
 
   return (
-    <div
-      className="fixed inset-0 z-[60] flex items-end justify-center bg-black/70 p-0 sm:items-center sm:p-6"
-      role="presentation"
-      onClick={onClose}
-    >
-      <div
-        ref={panelRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="record-details-title"
-        tabIndex={-1}
-        onClick={(event) => event.stopPropagation()}
-        className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-t-lg border border-line bg-surface shadow-2xl outline-none sm:rounded-lg"
-      >
+    <Modal open={true} onClose={onClose} labelledBy="record-details-title"
+      className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-t-lg border border-line bg-surface shadow-2xl outline-none sm:rounded-lg">
         <div className="flex items-start justify-between gap-4 border-b border-line px-5 py-4">
           <div>
             <p className="text-[11px] font-medium tracking-[0.12em] text-slate-500 uppercase">
@@ -243,7 +215,6 @@ export default function TelemetryDetails({
             </div>
           </section>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }

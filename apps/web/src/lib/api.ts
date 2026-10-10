@@ -21,9 +21,15 @@ import type {
 
 const DEFAULT_API_URL = "http://127.0.0.1:8000";
 
-export const API_BASE_URL = (
+function removeTrailingSlashes(url: string): string {
+  let end = url.length;
+  while (end > 0 && url[end - 1] === "/") end -= 1;
+  return url.slice(0, end);
+}
+
+export const API_BASE_URL = removeTrailingSlashes(
   process.env.NEXT_PUBLIC_API_URL ?? DEFAULT_API_URL
-).replace(/\/+$/, "");
+);
 
 export type ApiErrorKind = "network" | "http" | "invalid";
 

@@ -50,7 +50,7 @@ class AnomalyEngine:
 
         results: dict[int, dict] = {}
         anomalies: list[dict] = []
-        severity_counts = {name: 0 for name in config.SEVERITY_ORDER}
+        severity_counts = dict.fromkeys(config.SEVERITY_ORDER, 0)
         all_scores: list[float] = []
 
         for _, row in data.get_dataset().iterrows():
@@ -61,7 +61,6 @@ class AnomalyEngine:
             result["record_id"] = record_id
             result["machine_type"] = machine_type
             result["product_id"] = str(row["Product ID"])
-            result["severity"] = result["severity"]
             # Ground-truth labels are attached ONLY for clearly-labelled
             # historical comparison. The detector never consumes them.
             result["ground_truth_failure"] = bool(int(row["Machine failure"]))

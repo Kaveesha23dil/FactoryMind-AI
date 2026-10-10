@@ -2,10 +2,16 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, BrainCircuit } from "lucide-react";
-import { getIncident } from "@/lib/api";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, BrainCircuit, ExternalLink, Loader2 } from "lucide-react";
+import {
+  getIncident,
+  getIncidentInvestigations,
+  startInvestigation,
+} from "@/lib/api";
 import type { Incident } from "@/types/incident";
 import type { FeatureContribution } from "@/types/anomaly";
+import type { InvestigationListItem } from "@/types/investigation";
 import StatusBadge from "@/components/ui/StatusBadge";
 import FeatureContributionChart from "@/components/anomalies/FeatureContributionChart";
 import IncidentStatusControl from "@/components/incidents/IncidentStatusControl";
@@ -21,6 +27,10 @@ import {
   SEVERITY_TONE,
   featureLabel,
 } from "@/lib/severity";
+import {
+  INVESTIGATION_STATUS_LABELS,
+  INVESTIGATION_STATUS_TONE,
+} from "@/lib/investigations";
 import { cn, formatDateTime, formatDecimal } from "@/lib/format";
 
 interface IncidentDetailProps {
@@ -69,9 +79,16 @@ function evidenceRow(feature: FeatureContribution) {
 }
 
 export default function IncidentDetail({ incidentId }: IncidentDetailProps) {
+  const router = useRouter();
   const [incident, setIncident] = useState<Incident | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [existingInvestigations, setExistingInvestigations] = useState<
+    InvestigationListItem[]
+  >([]);
+  const [starting, setStarting] = useState(false);
+  const [startError, setStartError] = useState<string | null>(null);
 
   useEffect(() => {
     let stale = false;
@@ -89,10 +106,34 @@ export default function IncidentDetail({ incidentId }: IncidentDetailProps) {
         );
         setLoading(false);
       });
+    getIncidentInvestigations(incidentId, { limit: 20 })
+      .then((response) => {
+        if (stale) return;
+        setExistingInvestigations(response.items);
+      })
+      .catch(() => {
+        if (stale) return;
+        setExistingInvestigations([]);
+      });
     return () => {
       stale = true;
     };
   }, [incidentId]);
+
+  async function handleStartInvestigation() {
+    setStarting(true);
+    setStartError(null);
+    try {
+      const response = await startInvestigation(incidentId);
+      router.push(`/investigations/${response.investigation_id}`);
+    } catch (err) {
+      setStartError(
+        err instanceof Error ? err.message : "The AI investigation could not be started."
+      );
+    } finally {
+      setStarting(false);
+    }
+  }
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -285,30 +326,98 @@ export default function IncidentDetail({ incidentId }: IncidentDetailProps) {
                 </dl>
               </section>
 
-              <section className="rounded-lg border border-dashed border-line p-5">
+              <section className="rounded-lg border border-line bg-surface p-5">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <p className="flex items-center gap-2 text-sm font-medium text-slate-300">
+                    <p className="flex items-center gap-2 text-sm font-medium text-slate-200">
                       <BrainCircuit
-                        className="h-4 w-4 text-accent"
+                        className="h-4 w-4 text-cyan-accent"
                         aria-hidden="true"
                       />
                       Investigate with AI
                     </p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      Gemini-powered, evidence-based root-cause investigation is
-                      planned for the next phase.
+                    <p className="mt-1 max-w-xl text-xs text-slate-400">
+                      Runs a Gemini-powered, evidence-based root-cause
+                      investigation using the saved incident and prior incidents.
+                      Findings are hypotheses for review, not confirmed faults.
                     </p>
                   </div>
                   <button
                     type="button"
-                    disabled
-                    aria-disabled="true"
-                    className="shrink-0 cursor-not-allowed rounded-md border border-line bg-surface-raised px-3 py-2 text-xs font-medium text-slate-500"
+                    onClick={handleStartInvestigation}
+                    disabled={starting}
+                    className={cn(
+                      "shrink-0 inline-flex items-center gap-1.5 rounded-md border border-accent/40 bg-accent/15 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-accent/25 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none",
+                      starting && "cursor-not-allowed opacity-60"
+                    )}
                   >
-                    Coming in Step 4
+                    {starting ? (
+                      <Loader2
+                        className="h-3.5 w-3.5 animate-spin"
+                        aria-hidden="true"
+                      />
+                    ) : (
+                      <BrainCircuit
+                        className="h-3.5 w-3.5"
+                        aria-hidden="true"
+                      />
+                    )}
+                    {starting ? "Starting…" : "Investigate with AI"}
                   </button>
                 </div>
+
+                {startError && (
+                  <p className="mt-3 rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">
+                    {startError}
+                  </p>
+                )}
+
+                {existingInvestigations.length > 0 && (
+                  <div className="mt-4 border-t border-line pt-4">
+                    <p className="text-[11px] font-medium tracking-wide text-slate-500 uppercase">
+                      Previous investigations
+                    </p>
+                    <ul className="mt-2 space-y-1.5">
+                      {existingInvestigations.map((investigation) => (
+                        <li
+                          key={investigation.investigation_id}
+                          className="flex items-center justify-between gap-3 rounded-md border border-line bg-surface-raised px-3 py-2"
+                        >
+                          <div className="min-w-0">
+                            <Link
+                              href={`/investigations/${investigation.investigation_id}`}
+                              className="font-mono text-[11px] text-cyan-accent underline-offset-2 hover:underline"
+                            >
+                              {investigation.investigation_id}
+                            </Link>
+                            <p className="mt-0.5 text-[11px] text-slate-500">
+                              {formatDateTime(investigation.created_at)}
+                            </p>
+                          </div>
+                          <div className="flex shrink-0 items-center gap-2">
+                            <StatusBadge
+                              label={
+                                INVESTIGATION_STATUS_LABELS[investigation.status]
+                              }
+                              tone={INVESTIGATION_STATUS_TONE[investigation.status]}
+                              dot
+                            />
+                            <Link
+                              href={`/investigations/${investigation.investigation_id}`}
+                              aria-label={`Open ${investigation.investigation_id}`}
+                              className="text-slate-400 transition-colors hover:text-slate-200"
+                            >
+                              <ExternalLink
+                                className="h-3.5 w-3.5"
+                                aria-hidden="true"
+                              />
+                            </Link>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </section>
             </div>
 

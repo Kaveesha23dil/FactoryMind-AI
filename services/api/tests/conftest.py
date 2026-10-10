@@ -12,6 +12,10 @@ import tempfile
 _TMP_DIR = tempfile.mkdtemp(prefix="factorymind-tests-")
 os.environ["FACTORYMIND_DB_PATH"] = os.path.join(_TMP_DIR, "incidents.db")
 os.environ.setdefault("FACTORYMIND_LOG_LEVEL", "WARNING")
+# Investigations run with a deterministic scripted model and inline (no worker
+# thread) so automated tests never touch the network or a background thread.
+os.environ.setdefault("AI_PROVIDER", "scripted")
+os.environ.setdefault("FACTORYMIND_INVESTIGATION_ASYNC", "false")
 
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
@@ -71,3 +75,104 @@ def normal_record_id(engine) -> int:
 def assert_finite(value) -> None:
     assert isinstance(value, (int, float))
     assert np.isfinite(value)
+
+
+# --- AI investigation helpers ----------------------------------------------
+
+_SENSOR_RESPONSE = {
+    "summary": "Torque and tool wear are unusual relative to the training baseline.",
+    "findings": [
+        {
+            "feature": "torque_nm",
+            "observation": "Torque is elevated compared with the baseline median.",
+            "evidence_ids": ["EV-SENSOR-001", "EV-BASELINE-001"],
+        }
+    ],
+    "missing_measurements": ["Vibration and machine-specific time series are unavailable."],
+    "referenced_evidence_ids": ["EV-SENSOR-001", "EV-ANOMALY-001", "EV-BASELINE-001"],
+}
+
+_KNOWLEDGE_RESPONSE = {
+    "summary": "General guidance links high torque to overload and tool wear.",
+    "guidance": [
+        {
+            "symptom": "Elevated torque",
+            "guidance": "Check cutting parameters and tool condition before production.",
+            "evidence_ids": ["EV-MANUAL-001"],
+        }
+    ],
+    "referenced_evidence_ids": ["EV-MANUAL-001"],
+}
+
+_INVESTIGATION_RESPONSE = {
+    "summary": "Anomalous operating measurements require technician inspection.",
+    "hypotheses": [
+        {
+            "hypothesis_id": "H-001",
+            "title": "Possible excessive tool wear",
+            "description": "Elevated torque can accompany a worn cutting edge.",
+            "supporting_evidence_ids": ["EV-SENSOR-001", "EV-MANUAL-001"],
+            "contradicting_evidence_ids": [],
+            "missing_evidence": ["Direct tool inspection"],
+            "verification_steps": ["Inspect tool condition using approved procedures"],
+            "assessment": "plausible",
+        },
+        {
+            "hypothesis_id": "H-002",
+            "title": "Alternative: transient overload condition",
+            "description": "A short overload could raise torque without persistent wear.",
+            "supporting_evidence_ids": ["EV-ANOMALY-001"],
+            "contradicting_evidence_ids": [],
+            "missing_evidence": ["Continuity of load over time"],
+            "verification_steps": ["Review recent cutting parameters"],
+            "assessment": "weak",
+        },
+    ],
+}
+
+_CRITIC_RESPONSE = {
+    "verification_outcome": "supported",
+    "issues_found": [],
+    "unsupported_claims": [],
+    "contradictions": [],
+    "alternative_explanations": ["Sensor calibration drift"],
+    "missing_evidence": ["Vibration data"],
+    "citation_issues": [],
+    "revision_required": False,
+}
+
+
+def _as_json(payload: dict) -> str:
+    import json
+
+    return json.dumps(payload)
+
+
+def default_scripted_responses() -> dict[str, str]:
+    return {
+        "sensor_agent": _as_json(_SENSOR_RESPONSE),
+        "knowledge_agent": _as_json(_KNOWLEDGE_RESPONSE),
+        "investigation_agent": _as_json(_INVESTIGATION_RESPONSE),
+        "critic_agent": _as_json(_CRITIC_RESPONSE),
+    }
+
+
+def install_scripted_responses(overrides: dict | None = None) -> dict[str, str]:
+    """Register scripted responses (merging JSON-dict overrides) globally."""
+    from services.api.agents.runtime import set_scripted_response
+
+    responses = default_scripted_responses()
+    if overrides:
+        for agent_name, payload in overrides.items():
+            responses[agent_name] = (
+                payload if isinstance(payload, str) else _as_json(payload)
+            )
+    for agent_name, text in responses.items():
+        set_scripted_response(agent_name, text)
+    return responses
+
+
+def clear_scripted_responses() -> None:
+    from services.api.agents.runtime import clear_scripted_responses as _clear
+
+    _clear()

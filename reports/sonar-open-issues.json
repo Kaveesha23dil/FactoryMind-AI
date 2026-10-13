@@ -1,0 +1,1100 @@
+[
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/CounterfactualPanel.tsx",
+    "line": 46,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S9383",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/CounterfactualPanel.tsx",
+    "line": 73,
+    "message": "Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator."
+  },
+  {
+    "rule": "typescript:S6853",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/CounterfactualPanel.tsx",
+    "line": 191,
+    "message": "A form label must have accessible text."
+  },
+  {
+    "rule": "typescript:S6853",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/CounterfactualPanel.tsx",
+    "line": 222,
+    "message": "A form label must be associated with a control."
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/CounterfactualPanel.tsx",
+    "line": 278,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/CounterfactualPanel.tsx",
+    "line": 373,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/CounterfactualPanel.tsx",
+    "line": 451,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/CounterfactualPanel.tsx",
+    "line": 561,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S4323",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/CounterfactualPanel.tsx",
+    "line": 568,
+    "message": "Replace this union type with a type alias."
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/CounterfactualPanel.tsx",
+    "line": 597,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S3358",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/CounterfactualPanel.tsx",
+    "line": 607,
+    "message": "Extract this nested ternary operation into an independent statement."
+  },
+  {
+    "rule": "typescript:S3358",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/CounterfactualPanel.tsx",
+    "line": 609,
+    "message": "Extract this nested ternary operation into an independent statement."
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/CounterfactualPanel.tsx",
+    "line": 636,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/EvidenceGraphView.tsx",
+    "line": 58,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/EvidenceGraphView.tsx",
+    "line": 414,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/EvidenceGraphView.tsx",
+    "line": 483,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/InvestigationWorkspace.tsx",
+    "line": 289,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S6772",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/InvestigationWorkspace.tsx",
+    "line": 450,
+    "message": "Ambiguous spacing after previous element span"
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/VisualInspectionPanel.tsx",
+    "line": 44,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S9383",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/VisualInspectionPanel.tsx",
+    "line": 60,
+    "message": "Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator."
+  },
+  {
+    "rule": "typescript:S3358",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/VisualInspectionPanel.tsx",
+    "line": 193,
+    "message": "Extract this nested ternary operation into an independent statement."
+  },
+  {
+    "rule": "typescript:S3358",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/VisualInspectionPanel.tsx",
+    "line": 195,
+    "message": "Extract this nested ternary operation into an independent statement."
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/VisualInspectionPanel.tsx",
+    "line": 264,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S3358",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/VisualInspectionPanel.tsx",
+    "line": 323,
+    "message": "Extract this nested ternary operation into an independent statement."
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/VisualInspectionPanel.tsx",
+    "line": 395,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "python:S3776",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/agents/orchestrator.py",
+    "line": 390,
+    "message": "Refactor this function to reduce its Cognitive Complexity from 20 to the 15 allowed."
+  },
+  {
+    "rule": "python:S8415",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/routes/counterfactuals.py",
+    "line": 46,
+    "message": "Document this HTTPException with status code 404 in the \"responses\" parameter."
+  },
+  {
+    "rule": "python:S8415",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/routes/counterfactuals.py",
+    "line": 48,
+    "message": "Document this HTTPException with status code 400 in the \"responses\" parameter."
+  },
+  {
+    "rule": "python:S8415",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/routes/counterfactuals.py",
+    "line": 50,
+    "message": "Document this HTTPException with status code 409 in the \"responses\" parameter."
+  },
+  {
+    "rule": "python:S8415",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/routes/counterfactuals.py",
+    "line": 61,
+    "message": "Document this HTTPException with status code 404 in the \"responses\" parameter."
+  },
+  {
+    "rule": "python:S8415",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/routes/counterfactuals.py",
+    "line": 72,
+    "message": "Document this HTTPException with status code 404 in the \"responses\" parameter."
+  },
+  {
+    "rule": "python:S8415",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/routes/evidence_graph.py",
+    "line": 32,
+    "message": "Document this HTTPException with status code 404 in the \"responses\" parameter."
+  },
+  {
+    "rule": "python:S8410",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/routes/visual_inspection.py",
+    "line": 39,
+    "message": "Use \"Annotated\" type hints for FastAPI dependency injection"
+  },
+  {
+    "rule": "python:S8415",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/routes/visual_inspection.py",
+    "line": 49,
+    "message": "Document this HTTPException with status code 404 in the \"responses\" parameter."
+  },
+  {
+    "rule": "python:S8415",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/routes/visual_inspection.py",
+    "line": 51,
+    "message": "Document this HTTPException with status code 413 in the \"responses\" parameter."
+  },
+  {
+    "rule": "python:S8415",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/routes/visual_inspection.py",
+    "line": 53,
+    "message": "Document this HTTPException with status code 400 in the \"responses\" parameter."
+  },
+  {
+    "rule": "python:S8415",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/routes/visual_inspection.py",
+    "line": 64,
+    "message": "Document this HTTPException with status code 404 in the \"responses\" parameter."
+  },
+  {
+    "rule": "python:S8415",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/routes/visual_inspection.py",
+    "line": 75,
+    "message": "Document this HTTPException with status code 404 in the \"responses\" parameter."
+  },
+  {
+    "rule": "python:S8415",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/routes/visual_inspection.py",
+    "line": 86,
+    "message": "Document this HTTPException with status code 404 in the \"responses\" parameter."
+  },
+  {
+    "rule": "python:S8415",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/routes/visual_inspection.py",
+    "line": 98,
+    "message": "Document this HTTPException with status code 404 in the \"responses\" parameter."
+  },
+  {
+    "rule": "python:S8415",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/routes/visual_inspection.py",
+    "line": 100,
+    "message": "Document this HTTPException with status code 422 in the \"responses\" parameter."
+  },
+  {
+    "rule": "python:S3776",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/services/comparison_service.py",
+    "line": 63,
+    "message": "Refactor this function to reduce its Cognitive Complexity from 23 to the 15 allowed."
+  },
+  {
+    "rule": "python:S1172",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/services/comparison_service.py",
+    "line": 68,
+    "message": "Remove the unused function parameter \"original_evidence\"."
+  },
+  {
+    "rule": "python:S1481",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/services/counterfactual_service.py",
+    "line": 98,
+    "message": "Replace the unused local variable \"dropped_records\" with \"_\"."
+  },
+  {
+    "rule": "python:S3776",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/services/evidence_graph_service.py",
+    "line": 84,
+    "message": "Refactor this function to reduce its Cognitive Complexity from 56 to the 15 allowed."
+  },
+  {
+    "rule": "python:S1192",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/services/image_utils.py",
+    "line": 11,
+    "message": "Define a constant instead of duplicating this literal \"image/png\" 3 times."
+  },
+  {
+    "rule": "python:S1192",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/services/image_utils.py",
+    "line": 12,
+    "message": "Define a constant instead of duplicating this literal \"image/jpeg\" 3 times."
+  },
+  {
+    "rule": "python:S1192",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/services/image_utils.py",
+    "line": 13,
+    "message": "Define a constant instead of duplicating this literal \"image/gif\" 3 times."
+  },
+  {
+    "rule": "python:S1192",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/services/image_utils.py",
+    "line": 14,
+    "message": "Define a constant instead of duplicating this literal \"image/webp\" 3 times."
+  },
+  {
+    "rule": "pythonsecurity:S2083",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/services/visual_evidence_service.py",
+    "line": 109,
+    "message": "Path Traversal via unsanitized user input in VisualEvidenceService.store()"
+  },
+  {
+    "rule": "pythonsecurity:S5145",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/services/visual_evidence_service.py",
+    "line": 179,
+    "message": "Log Injection via unsanitized user input in VisualEvidenceService.analyze()"
+  },
+  {
+    "rule": "python:S9083",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/tests/test_counterfactuals.py",
+    "line": 30,
+    "message": "Remove empty parentheses from this decorator."
+  },
+  {
+    "rule": "python:S9083",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/tests/test_evidence_graph.py",
+    "line": 26,
+    "message": "Remove empty parentheses from this decorator."
+  },
+  {
+    "rule": "python:S9083",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/tests/test_visual_inspection.py",
+    "line": 37,
+    "message": "Remove empty parentheses from this decorator."
+  },
+  {
+    "rule": "python:S9073",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/tests/test_visual_inspection.py",
+    "line": 104,
+    "message": "Split this composite assertion into separate assertions."
+  },
+  {
+    "rule": "typescript:S3358",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/InvestigationBoard.tsx",
+    "line": 268,
+    "message": "Extract this nested ternary operation into an independent statement."
+  },
+  {
+    "rule": "typescript:S3358",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/InvestigationBoard.tsx",
+    "line": 274,
+    "message": "Extract this nested ternary operation into an independent statement."
+  },
+  {
+    "rule": "typescript:S6772",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/InvestigationBoard.tsx",
+    "line": 355,
+    "message": "Ambiguous spacing before next element span"
+  },
+  {
+    "rule": "typescript:S3776",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/InvestigationWorkspace.tsx",
+    "line": 80,
+    "message": "Refactor this function to reduce its Cognitive Complexity from 23 to the 15 allowed."
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/InvestigationWorkspace.tsx",
+    "line": 80,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S9383",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/InvestigationWorkspace.tsx",
+    "line": 95,
+    "message": "Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator."
+  },
+  {
+    "rule": "typescript:S3358",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/InvestigationWorkspace.tsx",
+    "line": 162,
+    "message": "Extract this nested ternary operation into an independent statement."
+  },
+  {
+    "rule": "typescript:S3358",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/InvestigationWorkspace.tsx",
+    "line": 168,
+    "message": "Extract this nested ternary operation into an independent statement."
+  },
+  {
+    "rule": "typescript:S3358",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/InvestigationWorkspace.tsx",
+    "line": 254,
+    "message": "Extract this nested ternary operation into an independent statement."
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/InvestigationWorkspace.tsx",
+    "line": 331,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S3358",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/InvestigationWorkspace.tsx",
+    "line": 383,
+    "message": "Extract this nested ternary operation into an independent statement."
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/InvestigationWorkspace.tsx",
+    "line": 396,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/InvestigationWorkspace.tsx",
+    "line": 430,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S3358",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/InvestigationWorkspace.tsx",
+    "line": 463,
+    "message": "Extract this nested ternary operation into an independent statement."
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/InvestigationWorkspace.tsx",
+    "line": 500,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/InvestigationWorkspace.tsx",
+    "line": 539,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/InvestigationWorkspace.tsx",
+    "line": 566,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/InvestigationWorkspace.tsx",
+    "line": 604,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/InvestigationWorkspace.tsx",
+    "line": 629,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/InvestigationWorkspace.tsx",
+    "line": 702,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/InvestigationWorkspace.tsx",
+    "line": 746,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S3358",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/InvestigationWorkspace.tsx",
+    "line": 802,
+    "message": "Extract this nested ternary operation into an independent statement."
+  },
+  {
+    "rule": "typescript:S4624",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/investigations/InvestigationWorkspace.tsx",
+    "line": 802,
+    "message": "Refactor this code to not use nested template literals."
+  },
+  {
+    "rule": "pythonsecurity:S5145",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/agents/orchestrator.py",
+    "line": 292,
+    "message": "Log Injection via unsanitized user input in Orchestrator.run()"
+  },
+  {
+    "rule": "python:S8415",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/routes/investigations.py",
+    "line": 50,
+    "message": "Document this HTTPException with status code 404 in the \"responses\" parameter."
+  },
+  {
+    "rule": "python:S8415",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/routes/investigations.py",
+    "line": 52,
+    "message": "Document this HTTPException with status code 503 in the \"responses\" parameter."
+  },
+  {
+    "rule": "python:S8415",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/routes/investigations.py",
+    "line": 54,
+    "message": "Document this HTTPException with status code 409 in the \"responses\" parameter."
+  },
+  {
+    "rule": "python:S8415",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/routes/investigations.py",
+    "line": 94,
+    "message": "Document this HTTPException with status code 404 in the \"responses\" parameter."
+  },
+  {
+    "rule": "python:S8415",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/routes/investigations.py",
+    "line": 117,
+    "message": "Document this HTTPException with status code 404 in the \"responses\" parameter."
+  },
+  {
+    "rule": "python:S8415",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/routes/investigations.py",
+    "line": 131,
+    "message": "Document this HTTPException with status code 403 in the \"responses\" parameter."
+  },
+  {
+    "rule": "python:S8415",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/routes/investigations.py",
+    "line": 136,
+    "message": "Document this HTTPException with status code 401 in the \"responses\" parameter."
+  },
+  {
+    "rule": "python:S8415",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/routes/investigations.py",
+    "line": 140,
+    "message": "Document this HTTPException with status code 404 in the \"responses\" parameter."
+  },
+  {
+    "rule": "pythonsecurity:S5145",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/services/investigation_service.py",
+    "line": 224,
+    "message": "Log Injection via unsanitized user input in InvestigationService.run_job()"
+  },
+  {
+    "rule": "pythonsecurity:S5145",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/services/investigation_service.py",
+    "line": 226,
+    "message": "Log Injection via unsanitized user input in InvestigationService.run_job()"
+  },
+  {
+    "rule": "python:S1172",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/services/investigation_service.py",
+    "line": 309,
+    "message": "Remove the unused function parameter \"investigation_id\"."
+  },
+  {
+    "rule": "python:S7500",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/services/knowledge_repository.py",
+    "line": 130,
+    "message": "Replace this comprehension with passing the iterable to the collection constructor call"
+  },
+  {
+    "rule": "python:S9083",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/tests/test_agent_orchestration.py",
+    "line": 72,
+    "message": "Remove empty parentheses from this decorator."
+  },
+  {
+    "rule": "python:S5778",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/tests/test_agent_orchestration.py",
+    "line": 129,
+    "message": "Refactor this exception test to have only one invocation possibly throwing an exception."
+  },
+  {
+    "rule": "python:S5778",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/tests/test_agent_orchestration.py",
+    "line": 275,
+    "message": "Refactor this exception test to have only one invocation possibly throwing an exception."
+  },
+  {
+    "rule": "python:S5778",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/tests/test_agent_orchestration.py",
+    "line": 283,
+    "message": "Refactor this exception test to have only one invocation possibly throwing an exception."
+  },
+  {
+    "rule": "python:S9083",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/tests/test_investigations.py",
+    "line": 54,
+    "message": "Remove empty parentheses from this decorator."
+  },
+  {
+    "rule": "typescript:S3776",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/anomalies/AnomalyDetails.tsx",
+    "line": 81,
+    "message": "Refactor this function to reduce its Cognitive Complexity from 46 to the 15 allowed."
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/anomalies/AnomalyDetails.tsx",
+    "line": 81,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S3358",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/anomalies/AnomalyDetails.tsx",
+    "line": 196,
+    "message": "Extract this nested ternary operation into an independent statement."
+  },
+  {
+    "rule": "typescript:S3358",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/anomalies/AnomalyDetails.tsx",
+    "line": 198,
+    "message": "Extract this nested ternary operation into an independent statement."
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/anomalies/AnomalyMonitoring.tsx",
+    "line": 42,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S7721",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/anomalies/AnomalyMonitoring.tsx",
+    "line": 95,
+    "message": "Move async function 'fetchData' to the outer scope."
+  },
+  {
+    "rule": "typescript:S3358",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/anomalies/AnomalyMonitoring.tsx",
+    "line": 183,
+    "message": "Extract this nested ternary operation into an independent statement."
+  },
+  {
+    "rule": "typescript:S3358",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/anomalies/AnomalyMonitoring.tsx",
+    "line": 191,
+    "message": "Extract this nested ternary operation into an independent statement."
+  },
+  {
+    "rule": "typescript:S3358",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/anomalies/AnomalyMonitoring.tsx",
+    "line": 247,
+    "message": "Extract this nested ternary operation into an independent statement."
+  },
+  {
+    "rule": "typescript:S6479",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/anomalies/AnomalyMonitoring.tsx",
+    "line": 422,
+    "message": "Do not use Array index in keys"
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/anomalies/AnomalyScoreDistributionChart.tsx",
+    "line": 22,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S6479",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/anomalies/AnomalyScoreDistributionChart.tsx",
+    "line": 107,
+    "message": "Do not use Array index in keys"
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/anomalies/AnomalyTable.tsx",
+    "line": 34,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S3358",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/anomalies/AnomalyTable.tsx",
+    "line": 148,
+    "message": "Extract this nested ternary operation into an independent statement."
+  },
+  {
+    "rule": "typescript:S3358",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/anomalies/AnomalyTable.tsx",
+    "line": 154,
+    "message": "Extract this nested ternary operation into an independent statement."
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/anomalies/FeatureContributionChart.tsx",
+    "line": 21,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S6479",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/anomalies/FeatureContributionChart.tsx",
+    "line": 79,
+    "message": "Do not use Array index in keys"
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/anomalies/SeverityDistributionChart.tsx",
+    "line": 25,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S6551",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/incidents/IncidentDetail.tsx",
+    "line": 46,
+    "message": "'value' will use Object's default stringification format ('[object Object]') when stringified."
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/incidents/IncidentDetail.tsx",
+    "line": 81,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S3358",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/incidents/IncidentDetail.tsx",
+    "line": 180,
+    "message": "Extract this nested ternary operation into an independent statement."
+  },
+  {
+    "rule": "typescript:S3358",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/incidents/IncidentDetail.tsx",
+    "line": 187,
+    "message": "Extract this nested ternary operation into an independent statement."
+  },
+  {
+    "rule": "typescript:S6479",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/incidents/IncidentDetail.tsx",
+    "line": 292,
+    "message": "Do not use Array index in keys"
+  },
+  {
+    "rule": "typescript:S3863",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/incidents/IncidentManagement.tsx",
+    "line": 16,
+    "message": "'@/lib/format' imported multiple times."
+  },
+  {
+    "rule": "typescript:S3863",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/incidents/IncidentManagement.tsx",
+    "line": 22,
+    "message": "'@/lib/format' imported multiple times."
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/incidents/IncidentStatusControl.tsx",
+    "line": 21,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S3358",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/incidents/IncidentStatusControl.tsx",
+    "line": 56,
+    "message": "Extract this nested ternary operation into an independent statement."
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/incidents/IncidentTable.tsx",
+    "line": 34,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S3358",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/incidents/IncidentTable.tsx",
+    "line": 139,
+    "message": "Extract this nested ternary operation into an independent statement."
+  },
+  {
+    "rule": "typescript:S3358",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/incidents/IncidentTable.tsx",
+    "line": 145,
+    "message": "Extract this nested ternary operation into an independent statement."
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/incidents/IncidentTimeline.tsx",
+    "line": 13,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "python:S5778",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/tests/test_anomaly_detector.py",
+    "line": 142,
+    "message": "Refactor this exception test to have only one invocation possibly throwing an exception."
+  },
+  {
+    "rule": "python:S5778",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/tests/test_anomaly_detector.py",
+    "line": 145,
+    "message": "Refactor this exception test to have only one invocation possibly throwing an exception."
+  },
+  {
+    "rule": "python:S6711",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/data.py",
+    "line": 120,
+    "message": "Use a \"numpy.random.Generator\" here instead of this legacy function."
+  },
+  {
+    "rule": "python:S8415",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/routes/anomalies.py",
+    "line": 50,
+    "message": "Document this HTTPException with status code 422 in the \"responses\" parameter."
+  },
+  {
+    "rule": "python:S8415",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/routes/anomalies.py",
+    "line": 52,
+    "message": "Document this HTTPException with status code 422 in the \"responses\" parameter."
+  },
+  {
+    "rule": "python:S8415",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/routes/anomalies.py",
+    "line": 54,
+    "message": "Document this HTTPException with status code 422 in the \"responses\" parameter."
+  },
+  {
+    "rule": "python:S8415",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/routes/anomalies.py",
+    "line": 71,
+    "message": "Document this HTTPException with status code 404 in the \"responses\" parameter."
+  },
+  {
+    "rule": "python:S1192",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/routes/dataset.py",
+    "line": 31,
+    "message": "Define a constant instead of duplicating this literal \"Machine failure\" 3 times."
+  },
+  {
+    "rule": "python:S8415",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/routes/dataset.py",
+    "line": 102,
+    "message": "Document this HTTPException with status code 404 in the \"responses\" parameter."
+  },
+  {
+    "rule": "python:S8415",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/routes/incidents.py",
+    "line": 43,
+    "message": "Document this HTTPException with status code 404 in the \"responses\" parameter."
+  },
+  {
+    "rule": "python:S8415",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/routes/incidents.py",
+    "line": 45,
+    "message": "Document this HTTPException with status code 422 in the \"responses\" parameter."
+  },
+  {
+    "rule": "python:S8415",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/routes/incidents.py",
+    "line": 47,
+    "message": "Document this HTTPException with status code 409 in the \"responses\" parameter."
+  },
+  {
+    "rule": "python:S8415",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/routes/incidents.py",
+    "line": 59,
+    "message": "Document this HTTPException with status code 422 in the \"responses\" parameter."
+  },
+  {
+    "rule": "python:S8415",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/routes/incidents.py",
+    "line": 78,
+    "message": "Document this HTTPException with status code 422 in the \"responses\" parameter."
+  },
+  {
+    "rule": "python:S8415",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/routes/incidents.py",
+    "line": 80,
+    "message": "Document this HTTPException with status code 422 in the \"responses\" parameter."
+  },
+  {
+    "rule": "python:S8415",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/routes/incidents.py",
+    "line": 91,
+    "message": "Document this HTTPException with status code 404 in the \"responses\" parameter."
+  },
+  {
+    "rule": "python:S8415",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/routes/incidents.py",
+    "line": 99,
+    "message": "Document this HTTPException with status code 404 in the \"responses\" parameter."
+  },
+  {
+    "rule": "python:S8415",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/routes/incidents.py",
+    "line": 101,
+    "message": "Document this HTTPException with status code 409 in the \"responses\" parameter."
+  },
+  {
+    "rule": "python:S8415",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/routes/incidents.py",
+    "line": 103,
+    "message": "Document this HTTPException with status code 409 in the \"responses\" parameter."
+  },
+  {
+    "rule": "python:S8415",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/routes/incidents.py",
+    "line": 112,
+    "message": "Document this HTTPException with status code 404 in the \"responses\" parameter."
+  },
+  {
+    "rule": "python:S5778",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/tests/test_anomaly_detector.py",
+    "line": 120,
+    "message": "Refactor this exception test to have only one invocation possibly throwing an exception."
+  },
+  {
+    "rule": "python:S9083",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/tests/test_incident_api.py",
+    "line": 17,
+    "message": "Remove empty parentheses from this decorator."
+  },
+  {
+    "rule": "python:S5778",
+    "component": "Kaveesha23dil_FactoryMind-AI:services/api/tests/test_incident_service.py",
+    "line": 66,
+    "message": "Refactor this exception test to have only one invocation possibly throwing an exception."
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/app/(shell)/layout.tsx",
+    "line": 3,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/charts/ChartCard.tsx",
+    "line": 14,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/charts/FailureCategories.tsx",
+    "line": 22,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S6479",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/charts/FailureCategories.tsx",
+    "line": 84,
+    "message": "Do not use Array index in keys"
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/charts/SensorMetrics.tsx",
+    "line": 57,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S7770",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/charts/SensorMetrics.tsx",
+    "line": 83,
+    "message": "arrow function is equivalent to `String`. Use `String` directly."
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/charts/SensorMetrics.tsx",
+    "line": 119,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/charts/TemperatureChart.tsx",
+    "line": 21,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S3776",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/dashboard/Dashboard.tsx",
+    "line": 37,
+    "message": "Refactor this function to reduce its Cognitive Complexity from 16 to the 15 allowed."
+  },
+  {
+    "rule": "typescript:S3358",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/dashboard/Dashboard.tsx",
+    "line": 146,
+    "message": "Extract this nested ternary operation into an independent statement."
+  },
+  {
+    "rule": "typescript:S3358",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/dashboard/Dashboard.tsx",
+    "line": 154,
+    "message": "Extract this nested ternary operation into an independent statement."
+  },
+  {
+    "rule": "typescript:S3358",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/dashboard/Dashboard.tsx",
+    "line": 206,
+    "message": "Extract this nested ternary operation into an independent statement."
+  },
+  {
+    "rule": "typescript:S3358",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/dashboard/Dashboard.tsx",
+    "line": 262,
+    "message": "Extract this nested ternary operation into an independent statement."
+  },
+  {
+    "rule": "typescript:S3358",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/dashboard/Dashboard.tsx",
+    "line": 270,
+    "message": "Extract this nested ternary operation into an independent statement."
+  },
+  {
+    "rule": "typescript:S7721",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/dashboard/Overview.tsx",
+    "line": 69,
+    "message": "Move async function 'fetchOverviewData' to the outer scope."
+  },
+  {
+    "rule": "typescript:S3358",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/dashboard/Overview.tsx",
+    "line": 143,
+    "message": "Extract this nested ternary operation into an independent statement."
+  },
+  {
+    "rule": "typescript:S3358",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/dashboard/Overview.tsx",
+    "line": 151,
+    "message": "Extract this nested ternary operation into an independent statement."
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/dashboard/StatCard.tsx",
+    "line": 23,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/layout/DashboardHeader.tsx",
+    "line": 42,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/telemetry/TelemetryDetails.tsx",
+    "line": 21,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/telemetry/TelemetryTable.tsx",
+    "line": 25,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S6353",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/telemetry/TelemetryTable.tsx",
+    "line": 97,
+    "message": "Use concise character class syntax '\\D' instead of '[^0-9]'."
+  },
+  {
+    "rule": "typescript:S3358",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/telemetry/TelemetryTable.tsx",
+    "line": 199,
+    "message": "Extract this nested ternary operation into an independent statement."
+  },
+  {
+    "rule": "typescript:S3358",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/telemetry/TelemetryTable.tsx",
+    "line": 209,
+    "message": "Extract this nested ternary operation into an independent statement."
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/ui/Feedback.tsx",
+    "line": 5,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/ui/Feedback.tsx",
+    "line": 14,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/ui/Feedback.tsx",
+    "line": 44,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/ui/Feedback.tsx",
+    "line": 105,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/ui/Feedback.tsx",
+    "line": 120,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/ui/Feedback.tsx",
+    "line": 144,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/ui/PagePlaceholder.tsx",
+    "line": 11,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S6759",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/components/ui/StatusBadge.tsx",
+    "line": 25,
+    "message": "Mark the props of the component as read-only."
+  },
+  {
+    "rule": "typescript:S7744",
+    "component": "Kaveesha23dil_FactoryMind-AI:apps/web/src/lib/api.ts",
+    "line": 89,
+    "message": "The empty object is useless."
+  }
+]

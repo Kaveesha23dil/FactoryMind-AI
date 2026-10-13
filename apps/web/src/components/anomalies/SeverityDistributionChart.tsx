@@ -1,5 +1,4 @@
 "use client";
-
 import {
   Bar,
   BarChart,
@@ -17,25 +16,29 @@ import {
   SEVERITY_ORDER,
 } from "@/lib/severity";
 import { formatNumber } from "@/lib/format";
-
 interface SeverityDistributionChartProps {
   distribution: Record<Severity, number>;
 }
-
 export default function SeverityDistributionChart({
   distribution,
-}: SeverityDistributionChartProps) {
+}: Readonly<SeverityDistributionChartProps>) {
   const data = SEVERITY_ORDER.map((severity) => ({
     severity,
     label: SEVERITY_LABELS[severity],
     count: distribution[severity] ?? 0,
   }));
-
   return (
     <div className="h-64 w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 8, right: 12, bottom: 8, left: 0 }}>
-          <CartesianGrid stroke="#1E2A43" strokeDasharray="3 3" vertical={false} />
+        <BarChart
+          data={data}
+          margin={{ top: 8, right: 12, bottom: 8, left: 0 }}
+        >
+          <CartesianGrid
+            stroke="#1E2A43"
+            strokeDasharray="3 3"
+            vertical={false}
+          />
           <XAxis
             dataKey="label"
             tick={{ fontSize: 11, fill: "#94A3B8" }}
@@ -76,7 +79,10 @@ export default function SeverityDistributionChart({
           />
           <Bar dataKey="count" radius={[4, 4, 0, 0]} isAnimationActive={false}>
             {data.map((entry) => (
-              <Cell key={entry.severity} fill={SEVERITY_COLOR[entry.severity]} />
+              <Cell
+                key={entry.severity}
+                fill={SEVERITY_COLOR[entry.severity]}
+              />
             ))}
           </Bar>
         </BarChart>

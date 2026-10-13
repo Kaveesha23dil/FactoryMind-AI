@@ -7,28 +7,44 @@ visual-inspection feature needs.
 
 from __future__ import annotations
 
+MIME_PNG = "image/png"
+MIME_JPEG = "image/jpeg"
+MIME_GIF = "image/gif"
+MIME_WEBP = "image/webp"
+
 _DATA_URI_MIME = {
-    "image/png": ".png",
-    "image/jpeg": ".jpg",
-    "image/gif": ".gif",
-    "image/webp": ".webp",
+    MIME_PNG: ".png",
+    MIME_JPEG: ".jpg",
+    MIME_GIF: ".gif",
+    MIME_WEBP: ".webp",
 }
 
 _JPEG_SOF_MARKERS = {
-    0xC0, 0xC1, 0xC2, 0xC3, 0xC5, 0xC6, 0xC7,
-    0xC9, 0xCA, 0xCB, 0xCD, 0xCE, 0xCF,
+    0xC0,
+    0xC1,
+    0xC2,
+    0xC3,
+    0xC5,
+    0xC6,
+    0xC7,
+    0xC9,
+    0xCA,
+    0xCB,
+    0xCD,
+    0xCE,
+    0xCF,
 }
 
 
 def detect_mime_type(data: bytes) -> str | None:
     if data[:8] == b"\x89PNG\r\n\x1a\n":
-        return "image/png"
+        return MIME_PNG
     if data[:3] == b"\xff\xd8\xff":
-        return "image/jpeg"
+        return MIME_JPEG
     if data[:6] in (b"GIF87a", b"GIF89a"):
-        return "image/gif"
+        return MIME_GIF
     if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
-        return "image/webp"
+        return MIME_WEBP
     return None
 
 
@@ -40,19 +56,19 @@ def image_dimensions(data: bytes) -> tuple[int | None, int | None]:
     """Return (width, height) if they can be parsed, else (None, None)."""
     try:
         mime = detect_mime_type(data)
-        if mime == "image/png":
+        if mime == MIME_PNG:
             return (
                 int.from_bytes(data[16:20], "big"),
                 int.from_bytes(data[20:24], "big"),
             )
-        if mime == "image/gif":
+        if mime == MIME_GIF:
             return (
                 int.from_bytes(data[6:8], "little"),
                 int.from_bytes(data[8:10], "little"),
             )
-        if mime == "image/jpeg":
+        if mime == MIME_JPEG:
             return _jpeg_dimensions(data)
-        if mime == "image/webp":
+        if mime == MIME_WEBP:
             return _webp_dimensions(data)
     except (IndexError, ValueError):
         return (None, None)
@@ -68,13 +84,13 @@ def _jpeg_dimensions(data: bytes) -> tuple[int | None, int | None]:
             continue
         marker = data[index + 1]
         if marker in _JPEG_SOF_MARKERS:
-            height = int.from_bytes(data[index + 5:index + 7], "big")
-            width = int.from_bytes(data[index + 7:index + 9], "big")
+            height = int.from_bytes(data[index + 5 : index + 7], "big")
+            width = int.from_bytes(data[index + 7 : index + 9], "big")
             return (width, height)
         if marker in (0xD8, 0xD9) or 0xD0 <= marker <= 0xD7:
             index += 2
             continue
-        segment_length = int.from_bytes(data[index + 2:index + 4], "big")
+        segment_length = int.from_bytes(data[index + 2 : index + 4], "big")
         if segment_length <= 0:
             break
         index += 2 + segment_length

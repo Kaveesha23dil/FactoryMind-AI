@@ -69,7 +69,7 @@ class RecordingReporter:
         return self.agents
 
 
-@pytest.fixture()
+@pytest.fixture
 def isolated_incident_store(tmp_path):
     service = IncidentService(SqliteIncidentRepository(Database(tmp_path / "api.db")))
     service.initialize()
@@ -125,9 +125,12 @@ def test_runtime_returns_schema_validated_output():
 
 
 def test_runtime_missing_scripted_response_raises():
-    runtime = AdkRuntime(provider="scripted", model_name="scripted", scripted_responses={})
+    runtime = AdkRuntime(
+        provider="scripted", model_name="scripted", scripted_responses={}
+    )
+    agent_run = runtime.run(sensor_agent.SPEC, "prompt")
     with pytest.raises(InvestigationProviderError):
-        asyncio.run(runtime.run(sensor_agent.SPEC, "prompt"))
+        asyncio.run(agent_run)
 
 
 def test_orchestrator_end_to_end(isolated_incident_store, anomaly_ids):
@@ -138,7 +141,9 @@ def test_orchestrator_end_to_end(isolated_incident_store, anomaly_ids):
         model_name="scripted",
         scripted_responses=default_scripted_responses(),
     )
-    orchestrator = Orchestrator(runtime=runtime, incident_service=isolated_incident_store)
+    orchestrator = Orchestrator(
+        runtime=runtime, incident_service=isolated_incident_store
+    )
     reporter = RecordingReporter()
 
     result = asyncio.run(
@@ -156,7 +161,9 @@ def test_orchestrator_end_to_end(isolated_incident_store, anomaly_ids):
     assert report["disclaimer"]
     assert result.evidence
     assert report["recommended_actions"]
-    assert all(action["requires_human_approval"] for action in report["recommended_actions"])
+    assert all(
+        action["requires_human_approval"] for action in report["recommended_actions"]
+    )
 
     assert _activity_agents(report) == AGENT_NAMES
     assert {record["agent"] for record in reporter.agents} == AGENT_NAMES
@@ -166,7 +173,9 @@ def test_orchestrator_end_to_end(isolated_incident_store, anomaly_ids):
     assert "machine failure" not in rendered
 
 
-def test_orchestrator_rejects_unsupported_citation(isolated_incident_store, anomaly_ids):
+def test_orchestrator_rejects_unsupported_citation(
+    isolated_incident_store, anomaly_ids
+):
     draft = {
         "summary": "Draft citing a nonexistent evidence id.",
         "hypotheses": [
@@ -189,7 +198,9 @@ def test_orchestrator_rejects_unsupported_citation(isolated_incident_store, anom
     runtime = AdkRuntime(
         provider="scripted", model_name="scripted", scripted_responses=responses
     )
-    orchestrator = Orchestrator(runtime=runtime, incident_service=isolated_incident_store)
+    orchestrator = Orchestrator(
+        runtime=runtime, incident_service=isolated_incident_store
+    )
     reporter = RecordingReporter()
 
     result = asyncio.run(
@@ -224,7 +235,9 @@ def test_critic_can_force_revision(isolated_incident_store, anomaly_ids):
     runtime = AdkRuntime(
         provider="scripted", model_name="scripted", scripted_responses=responses
     )
-    orchestrator = Orchestrator(runtime=runtime, incident_service=isolated_incident_store)
+    orchestrator = Orchestrator(
+        runtime=runtime, incident_service=isolated_incident_store
+    )
     reporter = RecordingReporter()
 
     result = asyncio.run(
@@ -270,18 +283,28 @@ def _dummy_spec() -> AgentSpec:
 
 def test_agent_timeout_raises_investigation_error():
     orchestrator = Orchestrator(
-        runtime=_SlowRuntime(), incident_service=None, timeout_seconds=0.05, max_retries=0
+        runtime=_SlowRuntime(),
+        incident_service=None,
+        timeout_seconds=0.05,
+        max_retries=0,
     )
+    spec = _dummy_spec()
+    agent_run = orchestrator._run_agent(spec, {})
     with pytest.raises(InvestigationError):
-        asyncio.run(orchestrator._run_agent(_dummy_spec(), {}))
+        asyncio.run(agent_run)
 
 
 def test_provider_failure_raises_investigation_error():
     orchestrator = Orchestrator(
-        runtime=_FailingRuntime(), incident_service=None, timeout_seconds=1, max_retries=0
+        runtime=_FailingRuntime(),
+        incident_service=None,
+        timeout_seconds=1,
+        max_retries=0,
     )
+    spec = _dummy_spec()
+    agent_run = orchestrator._run_agent(spec, {})
     with pytest.raises(InvestigationError):
-        asyncio.run(orchestrator._run_agent(_dummy_spec(), {}))
+        asyncio.run(agent_run)
 
 
 def _activity_agents(report: dict) -> set[str]:

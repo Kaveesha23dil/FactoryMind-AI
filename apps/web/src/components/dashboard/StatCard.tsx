@@ -1,8 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/format";
-
 export type StatCardTone = "accent" | "cyan" | "success" | "warning" | "danger";
-
 interface StatCardProps {
   label: string;
   value: string;
@@ -11,7 +9,6 @@ interface StatCardProps {
   tone: StatCardTone;
   loading?: boolean;
 }
-
 const TONE_STYLES: Record<StatCardTone, string> = {
   accent: "border-accent/30 bg-accent/10 text-accent",
   cyan: "border-cyan-accent/30 bg-cyan-accent/10 text-cyan-accent",
@@ -19,7 +16,6 @@ const TONE_STYLES: Record<StatCardTone, string> = {
   warning: "border-warning/30 bg-warning/10 text-warning",
   danger: "border-danger/30 bg-danger/10 text-danger",
 };
-
 export default function StatCard({
   label,
   value,
@@ -27,7 +23,7 @@ export default function StatCard({
   icon: Icon,
   tone,
   loading = false,
-}: StatCardProps) {
+}: Readonly<StatCardProps>) {
   return (
     <article className="rounded-lg border border-line bg-surface p-5">
       <div className="flex items-start justify-between gap-3">
@@ -47,7 +43,7 @@ export default function StatCard({
         <span
           className={cn(
             "flex h-10 w-10 shrink-0 items-center justify-center rounded-md border",
-            TONE_STYLES[tone]
+            TONE_STYLES[tone],
           )}
           aria-hidden="true"
         >

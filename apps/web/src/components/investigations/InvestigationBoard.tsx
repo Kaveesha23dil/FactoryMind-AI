@@ -1,5 +1,4 @@
 "use client";
-
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
@@ -9,10 +8,7 @@ import {
   Loader2,
   XCircle,
 } from "lucide-react";
-import {
-  getHealth,
-  getInvestigations,
-} from "@/lib/api";
+import { getHealth, getInvestigations } from "@/lib/api";
 import type { BackendStatus } from "@/types/monitoring";
 import type {
   InvestigationListPage,
@@ -33,47 +29,39 @@ import {
   INVESTIGATION_STATUS_TONE,
 } from "@/lib/investigations";
 import { cn, formatDateTime, formatNumber } from "@/lib/format";
-
 const PAGE_SIZE = 20;
-
 type StatusFilter = "all" | InvestigationStatus;
-
 interface InvestigationCounts {
   total: number;
   active: number;
   completed: number;
   failed: number;
 }
-
 export default function InvestigationBoard() {
-  const [backendStatus, setBackendStatus] =
-    useState<BackendStatus>("checking");
+  const [backendStatus, setBackendStatus] = useState<BackendStatus>("checking");
   const [counts, setCounts] = useState<InvestigationCounts | null>(null);
   const [loadingCounts, setLoadingCounts] = useState(true);
   const [countsError, setCountsError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-
   const [page, setPage] = useState(0);
   const [status, setStatus] = useState<StatusFilter>("all");
   const [data, setData] = useState<InvestigationListPage | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [internalRefresh, setInternalRefresh] = useState(0);
-
   useEffect(() => {
     let stale = false;
     getHealth()
       .then((health) => {
         if (stale) return;
         setBackendStatus(
-          health.status === "healthy" ? "connected" : "unavailable"
+          health.status === "healthy" ? "connected" : "unavailable",
         );
       })
       .catch(() => {
         if (stale) return;
         setBackendStatus("unavailable");
       });
-
     Promise.all([
       getInvestigations({ limit: 1 }),
       getInvestigations({ limit: 1, status: "queued" }),
@@ -95,16 +83,16 @@ export default function InvestigationBoard() {
       .catch((err: unknown) => {
         if (stale) return;
         setCountsError(
-          err instanceof Error ? err.message : "Unable to load investigation counts."
+          err instanceof Error
+            ? err.message
+            : "Unable to load investigation counts.",
         );
         setLoadingCounts(false);
       });
-
     return () => {
       stale = true;
     };
   }, [internalRefresh]);
-
   useEffect(() => {
     let stale = false;
     getInvestigations({
@@ -122,7 +110,9 @@ export default function InvestigationBoard() {
         if (stale) return;
         setData(null);
         setError(
-          err instanceof Error ? err.message : "Unexpected error while loading investigations."
+          err instanceof Error
+            ? err.message
+            : "Unexpected error while loading investigations.",
         );
         setLoading(false);
       });
@@ -130,7 +120,6 @@ export default function InvestigationBoard() {
       stale = true;
     };
   }, [page, status, internalRefresh]);
-
   const reload = () => {
     setBackendStatus("checking");
     setRefreshing(true);
@@ -140,14 +129,13 @@ export default function InvestigationBoard() {
     void getHealth()
       .then((health) =>
         setBackendStatus(
-          health.status === "healthy" ? "connected" : "unavailable"
-        )
+          health.status === "healthy" ? "connected" : "unavailable",
+        ),
       )
       .catch(() => setBackendStatus("unavailable"))
       .finally(() => setRefreshing(false));
     setInternalRefresh((value) => value + 1);
   };
-
   return (
     <div className="flex min-h-screen flex-col">
       <DashboardHeader
@@ -257,128 +245,139 @@ export default function InvestigationBoard() {
                     <option key={value} value={value}>
                       {label}
                     </option>
-                  )
+                  ),
                 )}
               </select>
             </div>
           </div>
 
-          {loading ? (
-            <TableSkeleton />
-          ) : error ? (
-            <ErrorState
-              title="Could not load investigations"
-              message={error}
-              onRetry={reload}
-            />
-          ) : !data || data.items.length === 0 ? (
-            <EmptyState
-              title="No investigations found"
-              description="Run an AI investigation from an incident detail page to see it here."
-            />
-          ) : (
-            <>
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[900px] text-left text-xs">
-                  <caption className="sr-only">
-                    Root-cause investigations on detected incidents
-                  </caption>
-                  <thead>
-                    <tr className="border-b border-line text-[11px] tracking-[0.1em] text-slate-500 uppercase">
-                      <th scope="col" className="px-5 py-3 font-medium">
-                        Investigation
-                      </th>
-                      <th scope="col" className="px-3 py-3 font-medium">
-                        Incident
-                      </th>
-                      <th scope="col" className="px-3 py-3 font-medium">
-                        Status
-                      </th>
-                      <th scope="col" className="px-3 py-3 font-medium">
-                        Stage
-                      </th>
-                      <th scope="col" className="px-3 py-3 font-medium">
-                        Model
-                      </th>
-                      <th scope="col" className="px-3 py-3 font-medium">
-                        Created
-                      </th>
-                      <th scope="col" className="px-5 py-3 text-right font-medium">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.items.map((item) => (
-                      <tr
-                        key={item.investigation_id}
-                        className="border-b border-line/60 transition-colors last:border-b-0 hover:bg-surface-raised"
-                      >
-                        <td className="px-5 py-3">
-                          <Link
-                            href={`/investigations/${item.investigation_id}`}
-                            className="font-medium text-cyan-accent underline-offset-2 hover:underline focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+          {(function resolveDisplay() {
+            if (loading) {
+              return <TableSkeleton />;
+            }
+            return (function resolveDisplay() {
+              if (error) {
+                return (
+                  <ErrorState
+                    title="Could not load investigations"
+                    message={error}
+                    onRetry={reload}
+                  />
+                );
+              }
+              return !data || data.items.length === 0 ? (
+                <EmptyState
+                  title="No investigations found"
+                  description="Run an AI investigation from an incident detail page to see it here."
+                />
+              ) : (
+                <>
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[900px] text-left text-xs">
+                      <caption className="sr-only">
+                        Root-cause investigations on detected incidents
+                      </caption>
+                      <thead>
+                        <tr className="border-b border-line text-[11px] tracking-[0.1em] text-slate-500 uppercase">
+                          <th scope="col" className="px-5 py-3 font-medium">
+                            Investigation
+                          </th>
+                          <th scope="col" className="px-3 py-3 font-medium">
+                            Incident
+                          </th>
+                          <th scope="col" className="px-3 py-3 font-medium">
+                            Status
+                          </th>
+                          <th scope="col" className="px-3 py-3 font-medium">
+                            Stage
+                          </th>
+                          <th scope="col" className="px-3 py-3 font-medium">
+                            Model
+                          </th>
+                          <th scope="col" className="px-3 py-3 font-medium">
+                            Created
+                          </th>
+                          <th
+                            scope="col"
+                            className="px-5 py-3 text-right font-medium"
                           >
-                            {item.investigation_id}
-                          </Link>
-                        </td>
-                        <td className="px-3 py-3">
-                          <Link
-                            href={`/incidents/${item.incident_id}`}
-                            className="text-slate-300 underline-offset-2 hover:text-slate-200 hover:underline"
+                            Actions
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {data.items.map((item) => (
+                          <tr
+                            key={item.investigation_id}
+                            className="border-b border-line/60 transition-colors last:border-b-0 hover:bg-surface-raised"
                           >
-                            {item.incident_id}
-                          </Link>
-                        </td>
-                        <td className="px-3 py-3">
-                          <StatusBadge
-                            label={INVESTIGATION_STATUS_LABELS[item.status]}
-                            tone={INVESTIGATION_STATUS_TONE[item.status]}
-                            dot
-                          />
-                        </td>
-                        <td className="px-3 py-3 text-slate-400">
-                          {item.stage}
-                        </td>
-                        <td className="px-3 py-3 font-mono text-[11px] text-slate-400">
-                          {item.model}
-                        </td>
-                        <td className="px-3 py-3 text-slate-400">
-                          {formatDateTime(item.created_at)}
-                        </td>
-                        <td className="px-5 py-3 text-right">
-                          <Link
-                            href={`/investigations/${item.investigation_id}`}
-                            className="inline-flex items-center gap-1.5 rounded-md border border-line bg-surface-raised px-3 py-1.5 text-xs font-medium text-slate-200 transition-colors hover:bg-surface focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
-                          >
-                            Open
-                            <span aria-hidden="true">
-                              {item.status === "running" ||
-                              item.status === "queued"
-                                ? "…"
-                                : "→"}
-                            </span>
-                          </Link>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                            <td className="px-5 py-3">
+                              <Link
+                                href={`/investigations/${item.investigation_id}`}
+                                className="font-medium text-cyan-accent underline-offset-2 hover:underline focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+                              >
+                                {item.investigation_id}
+                              </Link>
+                            </td>
+                            <td className="px-3 py-3">
+                              <Link
+                                href={`/incidents/${item.incident_id}`}
+                                className="text-slate-300 underline-offset-2 hover:text-slate-200 hover:underline"
+                              >
+                                {item.incident_id}
+                              </Link>
+                            </td>
+                            <td className="px-3 py-3">
+                              <StatusBadge
+                                label={INVESTIGATION_STATUS_LABELS[item.status]}
+                                tone={INVESTIGATION_STATUS_TONE[item.status]}
+                                dot
+                              />
+                            </td>
+                            <td className="px-3 py-3 text-slate-400">
+                              {item.stage}
+                            </td>
+                            <td className="px-3 py-3 font-mono text-[11px] text-slate-400">
+                              {item.model}
+                            </td>
+                            <td className="px-3 py-3 text-slate-400">
+                              {formatDateTime(item.created_at)}
+                            </td>
+                            <td className="px-5 py-3 text-right">
+                              <Link
+                                href={`/investigations/${item.investigation_id}`}
+                                className="inline-flex items-center gap-1.5 rounded-md border border-line bg-surface-raised px-3 py-1.5 text-xs font-medium text-slate-200 transition-colors hover:bg-surface focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none"
+                              >
+                                <span>Open</span>
+                                <span aria-hidden="true">
+                                  {item.status === "running" ||
+                                  item.status === "queued"
+                                    ? "…"
+                                    : "→"}
+                                </span>
+                              </Link>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
 
-              <TablePagination
-                page={page}
-                pageSize={PAGE_SIZE}
-                total={data.total}
-                noun="investigations"
-                onPageChange={(nextPage) => {
-                  setLoading(true);
-                  setError(null);
-                  setPage(nextPage);
-                }}
-              />
-            </>
-          )}
+                  <TablePagination
+                    page={page}
+                    pageSize={PAGE_SIZE}
+                    total={data.total}
+                    noun="investigations"
+                    onPageChange={(nextPage) => {
+                      setLoading(true);
+                      setError(null);
+                      setPage(nextPage);
+                    }}
+                  />
+                </>
+              );
+            })();
+          })()}
         </section>
 
         <p className="pb-4 text-center text-[11px] text-slate-600">

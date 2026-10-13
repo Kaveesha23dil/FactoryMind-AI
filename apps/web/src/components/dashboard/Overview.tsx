@@ -1,5 +1,4 @@
 "use client";
-
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -15,18 +14,13 @@ import type { BackendStatus, DatasetSummary } from "@/types/monitoring";
 import { formatNumber, formatPercent } from "@/lib/format";
 import DashboardHeader from "@/components/layout/DashboardHeader";
 import StatCard from "@/components/dashboard/StatCard";
-import {
-  ErrorState,
-  KpiGridSkeleton,
-} from "@/components/ui/Feedback";
-
+import { ErrorState, KpiGridSkeleton } from "@/components/ui/Feedback";
 interface RoadmapItem {
   href: string;
   title: string;
   description: string;
   status: "available" | "planned";
 }
-
 const ROADMAP: RoadmapItem[] = [
   {
     href: "/monitoring",
@@ -57,46 +51,38 @@ const ROADMAP: RoadmapItem[] = [
     status: "planned",
   },
 ];
-
+async function fetchOverviewData() {
+  return Promise.allSettled([getHealth(), getDatasetSummary()]);
+}
 export default function Overview() {
-  const [backendStatus, setBackendStatus] =
-    useState<BackendStatus>("checking");
+  const [backendStatus, setBackendStatus] = useState<BackendStatus>("checking");
   const [summary, setSummary] = useState<DatasetSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-
-  async function fetchOverviewData() {
-    return Promise.allSettled([getHealth(), getDatasetSummary()]);
-  }
-
   const applyResults = useCallback(
     (results: Awaited<ReturnType<typeof fetchOverviewData>>) => {
       const [healthResult, summaryResult] = results;
-
       if (healthResult.status === "fulfilled") {
         setBackendStatus(
-          healthResult.value.status === "healthy" ? "connected" : "unavailable"
+          healthResult.value.status === "healthy" ? "connected" : "unavailable",
         );
       } else {
         setBackendStatus("unavailable");
       }
-
       if (summaryResult.status === "fulfilled") {
         setSummary(summaryResult.value);
         setError(null);
       } else {
         const reason = summaryResult.reason;
         setError(
-          reason instanceof Error ? reason.message : "Unable to load summary."
+          reason instanceof Error ? reason.message : "Unable to load summary.",
         );
       }
-
       setLoading(false);
     },
-    []
+    [],
   );
-
   useEffect(() => {
     let stale = false;
     void fetchOverviewData().then((results) => {
@@ -107,7 +93,6 @@ export default function Overview() {
       stale = true;
     };
   }, [applyResults]);
-
   const handleRefresh = useCallback(() => {
     setBackendStatus("checking");
     setError(null);
@@ -119,13 +104,11 @@ export default function Overview() {
       })
       .finally(() => setRefreshing(false));
   }, [applyResults]);
-
   const machineTypes = summary?.machine_types ?? [];
   const maxTypeCount = machineTypes.reduce(
     (max, item) => Math.max(max, item.count),
-    0
+    0,
   );
-
   return (
     <div className="flex min-h-screen flex-col">
       <DashboardHeader
@@ -138,126 +121,134 @@ export default function Overview() {
       />
 
       <div className="flex-1 space-y-6 px-4 py-6 sm:px-6 xl:px-8">
-        {loading ? (
-          <KpiGridSkeleton />
-        ) : error && !summary ? (
-          <div className="rounded-lg border border-line bg-surface">
-            <ErrorState
-              title="Dataset summary unavailable"
-              message={error}
-              onRetry={handleRefresh}
-            />
-          </div>
-        ) : summary ? (
-          <>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <StatCard
-                label="Total Records"
-                value={formatNumber(summary.record_count)}
-                hint="Rows in the AI4I 2020 dataset"
-                icon={Database}
-                tone="accent"
-              />
-              <StatCard
-                label="Normal Records"
-                value={formatNumber(summary.normal_count)}
-                hint="No failure recorded"
-                icon={CheckCircle2}
-                tone="success"
-              />
-              <StatCard
-                label="Recorded Failures"
-                value={formatNumber(summary.failure_count)}
-                hint="Ground-truth failure labels"
-                icon={AlertTriangle}
-                tone="danger"
-              />
-              <StatCard
-                label="Failure Rate"
-                value={formatPercent(summary.failure_rate)}
-                hint="Failures divided by total records"
-                icon={Percent}
-                tone="warning"
-              />
-            </div>
+        {(function resolveDisplay() {
+          if (loading) {
+            return <KpiGridSkeleton />;
+          }
+          return (function resolveDisplay() {
+            if (error && !summary) {
+              return (
+                <div className="rounded-lg border border-line bg-surface">
+                  <ErrorState
+                    title="Dataset summary unavailable"
+                    message={error}
+                    onRetry={handleRefresh}
+                  />
+                </div>
+              );
+            }
+            return summary ? (
+              <>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                  <StatCard
+                    label="Total Records"
+                    value={formatNumber(summary.record_count)}
+                    hint="Rows in the AI4I 2020 dataset"
+                    icon={Database}
+                    tone="accent"
+                  />
+                  <StatCard
+                    label="Normal Records"
+                    value={formatNumber(summary.normal_count)}
+                    hint="No failure recorded"
+                    icon={CheckCircle2}
+                    tone="success"
+                  />
+                  <StatCard
+                    label="Recorded Failures"
+                    value={formatNumber(summary.failure_count)}
+                    hint="Ground-truth failure labels"
+                    icon={AlertTriangle}
+                    tone="danger"
+                  />
+                  <StatCard
+                    label="Failure Rate"
+                    value={formatPercent(summary.failure_rate)}
+                    hint="Failures divided by total records"
+                    icon={Percent}
+                    tone="warning"
+                  />
+                </div>
 
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              <section className="rounded-lg border border-line bg-surface p-5">
-                <h2 className="text-sm font-semibold text-white">
-                  Machine Type Distribution
-                </h2>
-                <p className="mt-1 text-xs text-slate-400">
-                  Record counts by AI4I machine quality variant.
-                </p>
-                <ul className="mt-4 space-y-3">
-                  {machineTypes.map((item) => (
-                    <li key={item.type}>
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-medium text-slate-300">
-                          Type {item.type}
-                        </span>
-                        <span className="text-slate-400 tabular-nums">
-                          {formatNumber(item.count)} records
-                        </span>
-                      </div>
-                      <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-surface-raised">
-                        <div
-                          className="h-full rounded-full bg-cyan-accent"
-                          style={{
-                            width: `${
-                              maxTypeCount > 0
-                                ? (item.count / maxTypeCount) * 100
-                                : 0
-                            }%`,
-                          }}
-                        />
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </section>
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                  <section className="rounded-lg border border-line bg-surface p-5">
+                    <h2 className="text-sm font-semibold text-white">
+                      Machine Type Distribution
+                    </h2>
+                    <p className="mt-1 text-xs text-slate-400">
+                      Record counts by AI4I machine quality variant.
+                    </p>
+                    <ul className="mt-4 space-y-3">
+                      {machineTypes.map((item) => (
+                        <li key={item.type}>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-medium text-slate-300">
+                              Type {item.type}
+                            </span>
+                            <span className="text-slate-400 tabular-nums">
+                              {formatNumber(item.count)} records
+                            </span>
+                          </div>
+                          <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-surface-raised">
+                            <div
+                              className="h-full rounded-full bg-cyan-accent"
+                              style={{
+                                width: `${
+                                  maxTypeCount > 0
+                                    ? (item.count / maxTypeCount) * 100
+                                    : 0
+                                }%`,
+                              }}
+                            />
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
 
-              <section className="rounded-lg border border-line bg-surface p-5">
-                <h2 className="text-sm font-semibold text-white">
-                  Dataset Information
-                </h2>
-                <dl className="mt-4 space-y-3 text-xs">
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-slate-500">Dataset</dt>
-                    <dd className="text-right text-slate-300">
-                      {summary.dataset}
-                    </dd>
-                  </div>
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-slate-500">Source</dt>
-                    <dd className="text-right text-slate-300">
-                      {summary.source}
-                    </dd>
-                  </div>
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-slate-500">Failure categories</dt>
-                    <dd className="text-right text-slate-300">
-                      {summary.failure_categories
-                        .map((category) => category.code)
-                        .join(", ")}
-                    </dd>
-                  </div>
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-slate-500">Backend API</dt>
-                    <dd className="text-right text-slate-300">
-                      FastAPI · /api/dataset/summary
-                    </dd>
-                  </div>
-                </dl>
-                <p className="mt-4 border-t border-line pt-3 text-[11px] leading-relaxed text-slate-500">
-                  AI4I 2020 is a synthetic benchmark dataset. Records do not
-                  include timestamps or physical machine identifiers and are
-                  not a chronological machine history.
-                </p>
-              </section>
-            </div>
-          </>
-        ) : null}
+                  <section className="rounded-lg border border-line bg-surface p-5">
+                    <h2 className="text-sm font-semibold text-white">
+                      Dataset Information
+                    </h2>
+                    <dl className="mt-4 space-y-3 text-xs">
+                      <div className="flex justify-between gap-4">
+                        <dt className="text-slate-500">Dataset</dt>
+                        <dd className="text-right text-slate-300">
+                          {summary.dataset}
+                        </dd>
+                      </div>
+                      <div className="flex justify-between gap-4">
+                        <dt className="text-slate-500">Source</dt>
+                        <dd className="text-right text-slate-300">
+                          {summary.source}
+                        </dd>
+                      </div>
+                      <div className="flex justify-between gap-4">
+                        <dt className="text-slate-500">Failure categories</dt>
+                        <dd className="text-right text-slate-300">
+                          {summary.failure_categories
+                            .map((category) => category.code)
+                            .join(", ")}
+                        </dd>
+                      </div>
+                      <div className="flex justify-between gap-4">
+                        <dt className="text-slate-500">Backend API</dt>
+                        <dd className="text-right text-slate-300">
+                          FastAPI · /api/dataset/summary
+                        </dd>
+                      </div>
+                    </dl>
+                    <p className="mt-4 border-t border-line pt-3 text-[11px] leading-relaxed text-slate-500">
+                      AI4I 2020 is a synthetic benchmark dataset. Records do not
+                      include timestamps or physical machine identifiers and are
+                      not a chronological machine history.
+                    </p>
+                  </section>
+                </div>
+              </>
+            ) : null;
+          })();
+        })()}
 
         <section className="rounded-lg border border-line bg-surface p-5">
           <h2 className="text-sm font-semibold text-white">Platform Roadmap</h2>

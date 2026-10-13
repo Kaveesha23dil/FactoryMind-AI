@@ -23,9 +23,35 @@ _TOKEN_RE = re.compile(r"[a-z0-9]+")
 
 #: Common words ignored during retrieval scoring.
 _STOPWORDS = {
-    "the", "and", "for", "are", "was", "with", "that", "this", "from", "not",
-    "but", "has", "have", "its", "can", "may", "any", "all", "per", "into",
-    "than", "then", "when", "while", "which", "there", "these", "those", "over",
+    "the",
+    "and",
+    "for",
+    "are",
+    "was",
+    "with",
+    "that",
+    "this",
+    "from",
+    "not",
+    "but",
+    "has",
+    "have",
+    "its",
+    "can",
+    "may",
+    "any",
+    "all",
+    "per",
+    "into",
+    "than",
+    "then",
+    "when",
+    "while",
+    "which",
+    "there",
+    "these",
+    "those",
+    "over",
 }
 
 
@@ -126,8 +152,10 @@ class KnowledgeRepository:
         so the Knowledge Agent always receives a non-empty, cited context.
         """
         query_tokens = _tokenize(query)
-        scored = [(self._score(passage, query_tokens), passage) for passage in self._passages]
-        ranked = [item for item in sorted(scored, key=lambda x: x[0], reverse=True)]
+        scored = [
+            (self._score(passage, query_tokens), passage) for passage in self._passages
+        ]
+        ranked = sorted(scored, key=lambda x: x[0], reverse=True)
         hits = [passage for score, passage in ranked if score > min_score][:top_k]
         if not hits:
             hits = self._passages[:top_k]

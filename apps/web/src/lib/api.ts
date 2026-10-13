@@ -45,7 +45,7 @@ function removeTrailingSlashes(url: string): string {
 }
 
 export const API_BASE_URL = removeTrailingSlashes(
-  process.env.NEXT_PUBLIC_API_URL ?? DEFAULT_API_URL
+  process.env.NEXT_PUBLIC_API_URL ?? DEFAULT_API_URL,
 );
 
 export type ApiErrorKind = "network" | "http" | "invalid";
@@ -59,7 +59,7 @@ export class ApiError extends Error {
     message: string,
     kind: ApiErrorKind,
     status?: number,
-    detail?: unknown
+    detail?: unknown,
   ) {
     super(message);
     this.name = "ApiError";
@@ -78,7 +78,10 @@ function extractMessage(detail: unknown, fallback: string): string {
   return fallback;
 }
 
-export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+export async function apiFetch<T>(
+  path: string,
+  init?: RequestInit,
+): Promise<T> {
   let response: Response;
 
   try {
@@ -86,14 +89,14 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
       ...init,
       headers: {
         "Content-Type": "application/json",
-        ...(init?.headers ?? {}),
+        ...init?.headers,
       },
       cache: "no-store",
     });
   } catch {
     throw new ApiError(
       `Cannot reach the FactoryMind AI backend at ${API_BASE_URL}. Start the FastAPI server and try again.`,
-      "network"
+      "network",
     );
   }
 
@@ -114,7 +117,7 @@ export async function handleResponse<T>(response: Response): Promise<T> {
       extractMessage(detail, fallback),
       "http",
       response.status,
-      detail
+      detail,
     );
   }
 
@@ -124,7 +127,7 @@ export async function handleResponse<T>(response: Response): Promise<T> {
     throw new ApiError(
       "The backend returned a response that could not be parsed.",
       "invalid",
-      response.status
+      response.status,
     );
   }
 }
@@ -154,7 +157,8 @@ export function getTelemetry({
   params.set("offset", String(offset));
   if (failureOnly) params.set("failure_only", "true");
   if (normalOnly) params.set("normal_only", "true");
-  if (recordId != null && recordId > 0) params.set("record_id", String(recordId));
+  if (recordId != null && recordId > 0)
+    params.set("record_id", String(recordId));
   return apiFetch<TelemetryResponse>(`/api/telemetry?${params.toString()}`);
 }
 
@@ -227,14 +231,14 @@ export const createIncident = (recordId: number, note?: string) =>
 export const updateIncidentStatus = (
   incidentId: string,
   status: IncidentStatus,
-  note?: string
+  note?: string,
 ) =>
   apiFetch<Incident>(
     `/api/incidents/${encodeURIComponent(incidentId)}/status`,
     {
       method: "PATCH",
       body: JSON.stringify({ status, note: note ?? null }),
-    }
+    },
   );
 
 export const scanIncidents = (payload: ScanRequest) =>
@@ -262,42 +266,44 @@ export function getInvestigations({
   params.set("limit", String(limit));
   params.set("offset", String(offset));
   if (status) params.set("status", status);
-  return apiFetch<InvestigationListPage>(`/api/investigations?${params.toString()}`);
+  return apiFetch<InvestigationListPage>(
+    `/api/investigations?${params.toString()}`,
+  );
 }
 
 export const getInvestigation = (investigationId: string) =>
   apiFetch<InvestigationJob>(
-    `/api/investigations/${encodeURIComponent(investigationId)}`
+    `/api/investigations/${encodeURIComponent(investigationId)}`,
   );
 
 export const getIncidentInvestigations = (
   incidentId: string,
-  { limit = 20, offset = 0 }: { limit?: number; offset?: number } = {}
+  { limit = 20, offset = 0 }: { limit?: number; offset?: number } = {},
 ) => {
   const params = new URLSearchParams();
   params.set("limit", String(limit));
   params.set("offset", String(offset));
   return apiFetch<InvestigationListResponse>(
-    `/api/incidents/${encodeURIComponent(incidentId)}/investigations?${params.toString()}`
+    `/api/incidents/${encodeURIComponent(incidentId)}/investigations?${params.toString()}`,
   );
 };
 
 export const startInvestigation = (incidentId: string) =>
   apiFetch<InvestigationStartResponse>(
     `/api/incidents/${encodeURIComponent(incidentId)}/investigate`,
-    { method: "POST" }
+    { method: "POST" },
   );
 
 export const getInvestigationEvidence = (investigationId: string) =>
   apiFetch<EvidenceListResponse>(
-    `/api/investigations/${encodeURIComponent(investigationId)}/evidence`
+    `/api/investigations/${encodeURIComponent(investigationId)}/evidence`,
   );
 
 // --- Evidence graph ---------------------------------------------------------
 
 export const getEvidenceGraph = (investigationId: string) =>
   apiFetch<EvidenceGraph>(
-    `/api/investigations/${encodeURIComponent(investigationId)}/graph`
+    `/api/investigations/${encodeURIComponent(investigationId)}/graph`,
   );
 
 // --- Counterfactuals --------------------------------------------------------
@@ -305,7 +311,7 @@ export const getEvidenceGraph = (investigationId: string) =>
 export const createCounterfactual = (
   investigationId: string,
   excludedEvidenceIds: string[],
-  rationale?: string | null
+  rationale?: string | null,
 ) =>
   apiFetch<CounterfactualScenario>(
     `/api/investigations/${encodeURIComponent(investigationId)}/counterfactual`,
@@ -315,43 +321,44 @@ export const createCounterfactual = (
         excluded_evidence_ids: excludedEvidenceIds,
         rationale: rationale ?? null,
       }),
-    }
+    },
   );
 
 export const getCounterfactual = (scenarioId: string) =>
   apiFetch<CounterfactualScenario>(
-    `/api/counterfactuals/${encodeURIComponent(scenarioId)}`
+    `/api/counterfactuals/${encodeURIComponent(scenarioId)}`,
   );
 
 export const getInvestigationCounterfactuals = (investigationId: string) =>
   apiFetch<CounterfactualListResponse>(
-    `/api/investigations/${encodeURIComponent(investigationId)}/counterfactuals`
+    `/api/investigations/${encodeURIComponent(investigationId)}/counterfactuals`,
   );
 
 // --- Visual inspection ------------------------------------------------------
 
 export const getIncidentImages = (incidentId: string) =>
   apiFetch<VisualEvidenceListResponse>(
-    `/api/incidents/${encodeURIComponent(incidentId)}/images`
+    `/api/incidents/${encodeURIComponent(incidentId)}/images`,
   );
 
 export const getImage = (imageId: string) =>
-  apiFetch<VisualEvidenceRecord>(
-    `/api/images/${encodeURIComponent(imageId)}`
-  );
+  apiFetch<VisualEvidenceRecord>(`/api/images/${encodeURIComponent(imageId)}`);
 
-export const analyzeImage = (imageId: string, investigationId?: string | null) =>
+export const analyzeImage = (
+  imageId: string,
+  investigationId?: string | null,
+) =>
   apiFetch<VisualEvidenceRecord>(
     `/api/images/${encodeURIComponent(imageId)}/analyze`,
     {
       method: "POST",
       body: JSON.stringify({ investigation_id: investigationId ?? null }),
-    }
+    },
   );
 
 export async function uploadIncidentImage(
   incidentId: string,
-  file: File
+  file: File,
 ): Promise<VisualEvidenceRecord> {
   const form = new FormData();
   form.append("file", file);
@@ -359,12 +366,12 @@ export async function uploadIncidentImage(
   try {
     response = await fetch(
       `${API_BASE_URL}/api/incidents/${encodeURIComponent(incidentId)}/images`,
-      { method: "POST", body: form, cache: "no-store" }
+      { method: "POST", body: form, cache: "no-store" },
     );
   } catch {
     throw new ApiError(
       `Cannot reach the FactoryMind AI backend at ${API_BASE_URL}. Start the FastAPI server and try again.`,
-      "network"
+      "network",
     );
   }
   return handleResponse<VisualEvidenceRecord>(response);

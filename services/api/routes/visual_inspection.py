@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Annotated
+
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 
@@ -35,8 +37,13 @@ def get_service() -> VisualEvidenceService:
     "/api/incidents/{incident_id}/images",
     response_model=VisualEvidenceRecord,
     status_code=201,
+    responses={
+        400: {"description": "Invalid request"},
+        404: {"description": "Resource not found"},
+        413: {"description": "Image too large"},
+    },
 )
-async def upload_image(incident_id: str, file: UploadFile = File(...)) -> dict:
+async def upload_image(incident_id: str, file: Annotated[UploadFile, File()]) -> dict:
     data = await file.read()
     try:
         return get_service().store(
@@ -56,6 +63,7 @@ async def upload_image(incident_id: str, file: UploadFile = File(...)) -> dict:
 @router.get(
     "/api/incidents/{incident_id}/images",
     response_model=VisualEvidenceListResponse,
+    responses={404: {"description": "Resource not found"}},
 )
 def list_images(incident_id: str) -> dict:
     try:
@@ -67,6 +75,7 @@ def list_images(incident_id: str) -> dict:
 @router.get(
     "/api/images/{image_id}",
     response_model=VisualEvidenceRecord,
+    responses={404: {"description": "Resource not found"}},
 )
 def get_image(image_id: str) -> dict:
     try:
@@ -75,7 +84,10 @@ def get_image(image_id: str) -> dict:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
-@router.get("/api/images/{image_id}/content")
+@router.get(
+    "/api/images/{image_id}/content",
+    responses={404: {"description": "Resource not found"}},
+)
 def get_image_content(image_id: str) -> FileResponse:
     try:
         service = get_service()
@@ -89,6 +101,10 @@ def get_image_content(image_id: str) -> FileResponse:
 @router.post(
     "/api/images/{image_id}/analyze",
     response_model=VisualEvidenceRecord,
+    responses={
+        404: {"description": "Resource not found"},
+        422: {"description": "Validation error"},
+    },
 )
 def analyze_image(image_id: str, request: VisualAnalysisRequest | None = None) -> dict:
     investigation_id = request.investigation_id if request else None

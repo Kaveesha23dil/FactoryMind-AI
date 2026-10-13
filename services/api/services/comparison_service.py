@@ -60,21 +60,7 @@ def _match_hypotheses(
     return matches, unmatched_original, remaining_revised
 
 
-def compare_reports(
-    original_report: dict[str, Any],
-    revised_report: dict[str, Any],
-    anomaly_original: dict[str, Any],
-    anomaly_revised: dict[str, Any],
-    original_evidence: list[dict[str, Any]],
-    revised_evidence: list[dict[str, Any]],
-    excluded_evidence_ids: list[str],
-    excluded_feature_keys: list[str],
-) -> dict[str, Any]:
-    original_hypotheses = original_report.get("hypotheses", []) or []
-    revised_hypotheses = revised_report.get("hypotheses", []) or []
-
-    matches, removed, added = _match_hypotheses(original_hypotheses, revised_hypotheses)
-
+def _retained_hypotheses(matches):
     retained: list[dict[str, Any]] = []
     assessment_shifts: list[dict[str, Any]] = []
     for before, after in matches:
@@ -104,6 +90,24 @@ def compare_reports(
                     "revised_assessment": revised_assessment or "unknown",
                 }
             )
+    return retained, assessment_shifts
+
+
+def compare_reports(
+    original_report: dict[str, Any],
+    revised_report: dict[str, Any],
+    anomaly_original: dict[str, Any],
+    anomaly_revised: dict[str, Any],
+    revised_evidence: list[dict[str, Any]],
+    excluded_evidence_ids: list[str],
+    excluded_feature_keys: list[str],
+) -> dict[str, Any]:
+    original_hypotheses = original_report.get("hypotheses", []) or []
+    revised_hypotheses = revised_report.get("hypotheses", []) or []
+
+    matches, removed, added = _match_hypotheses(original_hypotheses, revised_hypotheses)
+
+    retained, assessment_shifts = _retained_hypotheses(matches)
 
     removed_changes = [
         {
@@ -157,16 +161,16 @@ def compare_reports(
     original_actions = set(_actions(original_report))
     revised_actions = set(_actions(revised_report))
 
-    retained_evidence = sorted(
-        {record["evidence_id"] for record in revised_evidence}
-    )
+    retained_evidence = sorted({record["evidence_id"] for record in revised_evidence})
 
     anomaly_comparison = {
         "original_score": anomaly_original.get("anomaly_score"),
         "revised_score": anomaly_revised.get("anomaly_score"),
         "original_severity": anomaly_original.get("severity"),
         "revised_severity": anomaly_revised.get("severity"),
-        "threshold": float(anomaly_revised.get("threshold", anomaly_original.get("threshold", 0.0))),
+        "threshold": float(
+            anomaly_revised.get("threshold", anomaly_original.get("threshold", 0.0))
+        ),
         "retained_feature_count": len(anomaly_revised.get("features", []) or []),
         "excluded_feature_keys": sorted(excluded_feature_keys),
         "recomputed": bool(anomaly_revised.get("anomaly_score_recomputed")),

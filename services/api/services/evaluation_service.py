@@ -24,16 +24,28 @@ def _confusion(y_true: np.ndarray, y_pred: np.ndarray) -> dict:
     tn = int(np.sum((y_true == 0) & (y_pred == 0)))
     fp = int(np.sum((y_true == 0) & (y_pred == 1)))
     fn = int(np.sum((y_true == 1) & (y_pred == 0)))
-    return {"true_positive": tp, "true_negative": tn, "false_positive": fp, "false_negative": fn}
+    return {
+        "true_positive": tp,
+        "true_negative": tn,
+        "false_positive": fp,
+        "false_negative": fn,
+    }
 
 
 def _metrics(y_true: np.ndarray, y_pred: np.ndarray) -> dict:
     cm = _confusion(y_true, y_pred)
-    tp, tn, fp, fn = cm["true_positive"], cm["true_negative"], cm["false_positive"], cm["false_negative"]
+    tp, tn, fp, fn = (
+        cm["true_positive"],
+        cm["true_negative"],
+        cm["false_positive"],
+        cm["false_negative"],
+    )
 
     precision = tp / (tp + fp) if (tp + fp) else 0.0
     recall = tp / (tp + fn) if (tp + fn) else 0.0
-    f1 = (2 * precision * recall / (precision + recall)) if (precision + recall) else 0.0
+    f1 = (
+        (2 * precision * recall / (precision + recall)) if (precision + recall) else 0.0
+    )
     fpr = fp / (fp + tn) if (fp + tn) else 0.0
     accuracy = (tp + tn) / len(y_true) if len(y_true) else 0.0
 
@@ -96,7 +108,9 @@ class EvaluationService:
         tuned = self.select_threshold_on_validation()
 
         test_scores, test_labels = self._score_frame(engine.test_frame)
-        configured_metrics = _metrics(test_labels, (test_scores >= configured).astype(int))
+        configured_metrics = _metrics(
+            test_labels, (test_scores >= configured).astype(int)
+        )
         tuned_metrics = _metrics(test_labels, (test_scores >= tuned).astype(int))
 
         positives = int(test_labels.sum())
@@ -104,6 +118,7 @@ class EvaluationService:
             "algorithm": engine.detector.algorithm,
             "split": {
                 "seed": config.RANDOM_SEED,
+                "generator": "numpy.default_rng/PCG64",
                 "train_count": int(len(engine.train_frame)),
                 "validation_count": int(len(engine.validation_frame)),
                 "test_count": int(len(engine.test_frame)),
@@ -119,7 +134,9 @@ class EvaluationService:
             "test_class_balance": {
                 "positive_failures": positives,
                 "negative_failures": int(len(test_labels) - positives),
-                "failure_rate": round(positives / len(test_labels), 4) if len(test_labels) else 0.0,
+                "failure_rate": (
+                    round(positives / len(test_labels), 4) if len(test_labels) else 0.0
+                ),
             },
             "notes": [
                 "Anomaly detection flags unusual observations; it is not a "

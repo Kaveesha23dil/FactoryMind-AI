@@ -58,7 +58,7 @@ runs as `python -m services.api.services.investigation_worker`.
 ## Configuration
 
 Create `services/api/.env` from `.env.example`. Key settings: `AI_PROVIDER`
-(google|scripted), `GEMINI_MODEL` (default gemini-2.5-flash), `GOOGLE_API_KEY`,
+(google|scripted), `GEMINI_MODEL` (default gemini-3.8-flash), `GOOGLE_API_KEY`,
 `AI_INVESTIGATION_ENABLED`, `FACTORYMIND_INVESTIGATION_ASYNC`,
 `FACTORYMIND_WORKER_SECRET`, `FACTORYMIND_KNOWLEDGE_TOP_K`, and the pipeline limits
 above. With `AI_PROVIDER=scripted` (no API key) the payloads and UI still work; the

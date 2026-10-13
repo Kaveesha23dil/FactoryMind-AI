@@ -1,5 +1,4 @@
 "use client";
-
 import { useCallback, useEffect, useState } from "react";
 import {
   AlertTriangle,
@@ -27,7 +26,6 @@ import {
   ErrorState,
   KpiGridSkeleton,
 } from "@/components/ui/Feedback";
-
 const METRIC_ROWS: Array<{
   key: "precision" | "recall" | "f1_score" | "false_positive_rate" | "accuracy";
   label: string;
@@ -38,8 +36,11 @@ const METRIC_ROWS: Array<{
   { key: "false_positive_rate", label: "False positive rate" },
   { key: "accuracy", label: "Accuracy" },
 ];
-
-function MetricsTable({ metrics }: { metrics: EvaluationMetrics }) {
+function MetricsTable({
+  metrics,
+}: Readonly<{
+  metrics: EvaluationMetrics;
+}>) {
   return (
     <table className="w-full text-left text-xs">
       <caption className="sr-only">
@@ -81,37 +82,31 @@ function MetricsTable({ metrics }: { metrics: EvaluationMetrics }) {
     </table>
   );
 }
-
+async function fetchData() {
+  return Promise.allSettled([
+    getHealth(),
+    getAnomalySummary(),
+    getEvaluationReport(),
+  ]);
+}
 export default function AnomalyMonitoring() {
-  const [backendStatus, setBackendStatus] =
-    useState<BackendStatus>("checking");
+  const [backendStatus, setBackendStatus] = useState<BackendStatus>("checking");
   const [summary, setSummary] = useState<AnomalySummary | null>(null);
   const [evaluation, setEvaluation] = useState<EvaluationReport | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [tableRefreshToken, setTableRefreshToken] = useState(0);
-
-  async function fetchData() {
-    return Promise.allSettled([
-      getHealth(),
-      getAnomalySummary(),
-      getEvaluationReport(),
-    ]);
-  }
-
   const applyResults = useCallback(
     (results: Awaited<ReturnType<typeof fetchData>>) => {
       const [healthResult, summaryResult, evaluationResult] = results;
-
       if (healthResult.status === "fulfilled") {
         setBackendStatus(
-          healthResult.value.status === "healthy" ? "connected" : "unavailable"
+          healthResult.value.status === "healthy" ? "connected" : "unavailable",
         );
       } else {
         setBackendStatus("unavailable");
       }
-
       if (summaryResult.status === "fulfilled") {
         setSummary(summaryResult.value);
         setError(null);
@@ -120,18 +115,16 @@ export default function AnomalyMonitoring() {
         setError(
           reason instanceof Error
             ? reason.message
-            : "Unable to load the anomaly summary."
+            : "Unable to load the anomaly summary.",
         );
       }
-
       setEvaluation(
-        evaluationResult.status === "fulfilled" ? evaluationResult.value : null
+        evaluationResult.status === "fulfilled" ? evaluationResult.value : null,
       );
       setLoading(false);
     },
-    []
+    [],
   );
-
   useEffect(() => {
     let stale = false;
     void fetchData().then((results) => {
@@ -142,7 +135,6 @@ export default function AnomalyMonitoring() {
       stale = true;
     };
   }, [applyResults]);
-
   const handleRefresh = useCallback(() => {
     setBackendStatus("checking");
     setError(null);
@@ -155,9 +147,7 @@ export default function AnomalyMonitoring() {
       .finally(() => setRefreshing(false));
     setTableRefreshToken((value) => value + 1);
   }, [applyResults]);
-
   const baselines = summary ? Object.entries(summary.feature_baselines) : [];
-
   return (
     <div className="flex min-h-screen flex-col">
       <DashboardHeader
@@ -178,107 +168,117 @@ export default function AnomalyMonitoring() {
             Detection Overview
           </h2>
 
-          {loading ? (
-            <KpiGridSkeleton />
-          ) : error && !summary ? (
-            <div className="rounded-lg border border-line bg-surface">
-              <ErrorState
-                title="Anomaly summary unavailable"
-                message={error}
-                onRetry={handleRefresh}
-              />
-            </div>
-          ) : summary ? (
-            <>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                <StatCard
-                  label="Observations Analyzed"
-                  value={formatNumber(summary.analyzed_sample_count)}
-                  hint="Dataset samples scored by the detector"
-                  icon={Database}
-                  tone="accent"
-                />
-                <StatCard
-                  label="Detected Anomalies"
-                  value={formatNumber(summary.detected_anomaly_count)}
-                  hint="Samples above the anomaly score threshold"
-                  icon={AlertTriangle}
-                  tone="danger"
-                />
-                <StatCard
-                  label="Anomaly Rate"
-                  value={formatPercent(summary.anomaly_rate)}
-                  hint="Detected anomalies divided by samples analyzed"
-                  icon={Percent}
-                  tone="warning"
-                />
-                <StatCard
-                  label="Anomaly Score Threshold"
-                  value={formatDecimal(summary.threshold, 2)}
-                  hint={`Feature z-score limit ${formatDecimal(
-                    summary.feature_z_threshold,
-                    2
-                  )}`}
-                  icon={Gauge}
-                  tone="cyan"
-                />
-              </div>
-              <p className="mt-3 flex items-start gap-2 text-[11px] leading-relaxed text-slate-500">
-                <SlidersHorizontal
-                  className="mt-0.5 h-3.5 w-3.5 shrink-0"
-                  aria-hidden="true"
-                />
-                Algorithm {summary.algorithm}. Detected product is an
-                application-defined anomaly level based on the robust z-score of
-                each observation. It is not a calibrated failure probability and
-                the dataset&apos;s ground-truth failure labels are never used as
-                detection inputs.
-              </p>
-            </>
-          ) : null}
+          {(function resolveDisplay() {
+            if (loading) {
+              return <KpiGridSkeleton />;
+            }
+            return (function resolveDisplay() {
+              if (error && !summary) {
+                return (
+                  <div className="rounded-lg border border-line bg-surface">
+                    <ErrorState
+                      title="Anomaly summary unavailable"
+                      message={error}
+                      onRetry={handleRefresh}
+                    />
+                  </div>
+                );
+              }
+              return summary ? (
+                <>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                    <StatCard
+                      label="Observations Analyzed"
+                      value={formatNumber(summary.analyzed_sample_count)}
+                      hint="Dataset samples scored by the detector"
+                      icon={Database}
+                      tone="accent"
+                    />
+                    <StatCard
+                      label="Detected Anomalies"
+                      value={formatNumber(summary.detected_anomaly_count)}
+                      hint="Samples above the anomaly score threshold"
+                      icon={AlertTriangle}
+                      tone="danger"
+                    />
+                    <StatCard
+                      label="Anomaly Rate"
+                      value={formatPercent(summary.anomaly_rate)}
+                      hint="Detected anomalies divided by samples analyzed"
+                      icon={Percent}
+                      tone="warning"
+                    />
+                    <StatCard
+                      label="Anomaly Score Threshold"
+                      value={formatDecimal(summary.threshold, 2)}
+                      hint={`Feature z-score limit ${formatDecimal(summary.feature_z_threshold, 2)}`}
+                      icon={Gauge}
+                      tone="cyan"
+                    />
+                  </div>
+                  <p className="mt-3 flex items-start gap-2 text-[11px] leading-relaxed text-slate-500">
+                    <SlidersHorizontal
+                      className="mt-0.5 h-3.5 w-3.5 shrink-0"
+                      aria-hidden="true"
+                    />
+                    Algorithm {summary.algorithm}. Detected product is an
+                    application-defined anomaly level based on the robust
+                    z-score of each observation. It is not a calibrated failure
+                    probability and the dataset&apos;s ground-truth failure
+                    labels are never used as detection inputs.
+                  </p>
+                </>
+              ) : null;
+            })();
+          })()}
         </section>
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          {loading ? (
-            <>
-              <ChartSkeleton />
-              <ChartSkeleton />
-            </>
-          ) : summary ? (
-            <>
-              <ChartCard
-                title="Severity Distribution"
-                description="Detected anomalies grouped by application-defined severity level."
-                note="Severity levels (low → critical) are defined by threshold multiples of the anomaly score and are specific to this application."
-              >
-                <SeverityDistributionChart
-                  distribution={summary.severity_distribution}
-                />
-              </ChartCard>
+          {(function resolveDisplay() {
+            if (loading) {
+              return (
+                <>
+                  <ChartSkeleton />
+                  <ChartSkeleton />
+                </>
+              );
+            }
+            return summary ? (
+              <>
+                <ChartCard
+                  title="Severity Distribution"
+                  description="Detected anomalies grouped by application-defined severity level."
+                  note="Severity levels (low → critical) are defined by threshold multiples of the anomaly score and are specific to this application."
+                >
+                  <SeverityDistributionChart
+                    distribution={summary.severity_distribution}
+                  />
+                </ChartCard>
 
-              <ChartCard
-                title="Anomaly Score Distribution"
-                description="Histogram of anomaly scores across all analyzed observations."
-                note="Bars at or above the configured threshold are marked as detected anomalies."
-              >
-                <AnomalyScoreDistributionChart
-                  histogram={summary.score_histogram}
-                  threshold={summary.threshold}
+                <ChartCard
+                  title="Anomaly Score Distribution"
+                  description="Histogram of anomaly scores across all analyzed observations."
+                  note="Bars at or above the configured threshold are marked as detected anomalies."
+                >
+                  <AnomalyScoreDistributionChart
+                    histogram={summary.score_histogram}
+                    threshold={summary.threshold}
+                  />
+                </ChartCard>
+              </>
+            ) : (
+              <div className="rounded-lg border border-line bg-surface lg:col-span-2">
+                <ErrorState
+                  title="Detection charts unavailable"
+                  message={
+                    error ??
+                    "The anomaly summary could not be loaded from the backend."
+                  }
+                  onRetry={handleRefresh}
                 />
-              </ChartCard>
-            </>
-          ) : (
-            <div className="rounded-lg border border-line bg-surface lg:col-span-2">
-              <ErrorState
-                title="Detection charts unavailable"
-                message={
-                  error ??
-                  "The anomaly summary could not be loaded from the backend."
-                }
-                onRetry={handleRefresh}
-              />
-            </div>
-          )}
+              </div>
+            );
+          })()}
         </div>
 
         {summary && (
@@ -297,13 +297,22 @@ export default function AnomalyMonitoring() {
                     <th scope="col" className="py-2 pr-3 font-medium">
                       Feature
                     </th>
-                    <th scope="col" className="py-2 pr-3 text-right font-medium">
+                    <th
+                      scope="col"
+                      className="py-2 pr-3 text-right font-medium"
+                    >
                       Median
                     </th>
-                    <th scope="col" className="py-2 pr-3 text-right font-medium">
+                    <th
+                      scope="col"
+                      className="py-2 pr-3 text-right font-medium"
+                    >
                       MAD
                     </th>
-                    <th scope="col" className="py-2 pr-3 text-right font-medium">
+                    <th
+                      scope="col"
+                      className="py-2 pr-3 text-right font-medium"
+                    >
                       Robust scale
                     </th>
                     <th scope="col" className="py-2 text-right font-medium">
@@ -399,27 +408,29 @@ export default function AnomalyMonitoring() {
                     <dt className="text-slate-500">Test failures</dt>
                     <dd className="text-slate-300 tabular-nums">
                       {formatNumber(
-                        evaluation.test_class_balance.positive_failures
+                        evaluation.test_class_balance.positive_failures,
                       )}{" "}
                       of{" "}
                       {formatNumber(
                         evaluation.test_class_balance.positive_failures +
-                          evaluation.test_class_balance.negative_failures
+                          evaluation.test_class_balance.negative_failures,
                       )}
                     </dd>
                   </div>
                   <div className="flex justify-between gap-4">
                     <dt className="text-slate-500">Test failure rate</dt>
                     <dd className="text-slate-300 tabular-nums">
-                      {formatPercent(evaluation.test_class_balance.failure_rate)}
+                      {formatPercent(
+                        evaluation.test_class_balance.failure_rate,
+                      )}
                     </dd>
                   </div>
                 </dl>
               </div>
               {evaluation.notes.length > 0 && (
                 <ul className="space-y-1 border-t border-line pt-3 text-[11px] leading-relaxed text-slate-500">
-                  {evaluation.notes.map((note, index) => (
-                    <li key={index}>• {note}</li>
+                  {evaluation.notes.map((note) => (
+                    <li key={note}>• {note}</li>
                   ))}
                 </ul>
               )}

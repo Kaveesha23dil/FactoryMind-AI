@@ -20,7 +20,10 @@ from services.api.services.incident_service import (
 )
 from services.api.services.investigation_repository import SqliteInvestigationRepository
 from services.api.services.investigation_service import InvestigationService
-from services.api.services.visual_evidence_service import VisualEvidenceService
+from services.api.services.visual_evidence_service import (
+    VisualEvidenceError,
+    VisualEvidenceService,
+)
 from services.api.services.visual_repository import SqliteVisualEvidenceRepository
 from services.api.tests.conftest import (
     anomalous_record_ids,
@@ -34,7 +37,7 @@ PNG_BYTES = base64.b64decode(
 )
 
 
-@pytest.fixture()
+@pytest.fixture
 def visual_env(tmp_path):
     incident_service = IncidentService(
         SqliteIncidentRepository(Database(tmp_path / "api.db"))
@@ -101,7 +104,8 @@ def test_upload_and_fetch_image(client, visual_env, anomaly_ids):
     assert body["image_id"].startswith("IMG-")
     assert body["incident_id"] == incident_id
     assert body["mime_type"] == "image/png"
-    assert body["width"] == 1 and body["height"] == 1
+    assert body["width"] == 1
+    assert body["height"] == 1
     assert body["status"] == "stored"
     assert body["content_url"].endswith("/content")
 
@@ -115,11 +119,22 @@ def test_upload_and_fetch_image(client, visual_env, anomaly_ids):
     assert client.get("/api/images/IMG-NOPE").status_code == 404
 
 
+@pytest.mark.parametrize("storage_ref", ["../outside.png", "..\\outside.png", "."])
+def test_storage_path_rejects_escape(visual_env, storage_ref):
+    with pytest.raises(VisualEvidenceError, match="storage directory"):
+        visual_env._path(storage_ref)
+
+
+def test_storage_path_stays_inside_root(visual_env):
+    image_path = visual_env._path("IMG-SAFE.png")
+    assert image_path.parent == visual_env.storage_dir.resolve()
+
+
 def test_analyze_attaches_visual_evidence(client, visual_env, anomaly_ids):
     incident_id = _create_incident(client, anomaly_ids[1])
-    investigation_id = client.post(
-        f"/api/incidents/{incident_id}/investigate"
-    ).json()["investigation_id"]
+    investigation_id = client.post(f"/api/incidents/{incident_id}/investigate").json()[
+        "investigation_id"
+    ]
 
     image_id = _upload(client, incident_id).json()["image_id"]
     analyzed = client.post(
@@ -132,15 +147,19 @@ def test_analyze_attaches_visual_evidence(client, visual_env, anomaly_ids):
     assert record["observations"]
     assert record["limitations"]
 
-    evidence = client.get(
-        f"/api/investigations/{investigation_id}/evidence"
-    ).json()["items"]
-    visual = [item for item in evidence if item["evidence_type"] == "visual_observation"]
+    evidence = client.get(f"/api/investigations/{investigation_id}/evidence").json()[
+        "items"
+    ]
+    visual = [
+        item for item in evidence if item["evidence_type"] == "visual_observation"
+    ]
     assert visual
     assert visual[0]["evidence_id"].startswith("EV-VISUAL-")
 
     graph = client.get(f"/api/investigations/{investigation_id}/graph").json()
-    visual_nodes = [node for node in graph["nodes"] if node["type"] == "visual_evidence"]
+    visual_nodes = [
+        node for node in graph["nodes"] if node["type"] == "visual_evidence"
+    ]
     assert visual_nodes
 
 
@@ -152,7 +171,9 @@ def test_analyze_without_investigation(client, visual_env, anomaly_ids):
     assert record["investigation_id"] is None
 
 
-def test_reject_invalid_and_oversized_uploads(client, visual_env, anomaly_ids, monkeypatch):
+def test_reject_invalid_and_oversized_uploads(
+    client, visual_env, anomaly_ids, monkeypatch
+):
     incident_id = _create_incident(client, anomaly_ids[3])
 
     invalid = client.post(

@@ -1,5 +1,4 @@
 "use client";
-
 import {
   Bar,
   BarChart,
@@ -12,16 +11,13 @@ import {
 } from "recharts";
 import type { FailureCategory } from "@/types/monitoring";
 import { formatNumber } from "@/lib/format";
-
 interface FailureCategoriesProps {
   categories: FailureCategory[];
 }
-
 const BAR_COLORS = ["#2251FF", "#38BDF8", "#F59E0B", "#10B981", "#8B5CF6"];
-
 export default function FailureCategories({
   categories,
-}: FailureCategoriesProps) {
+}: Readonly<FailureCategoriesProps>) {
   if (categories.length === 0) {
     return (
       <p className="py-12 text-center text-xs text-slate-500">
@@ -29,12 +25,10 @@ export default function FailureCategories({
       </p>
     );
   }
-
   const data = categories.map((category) => ({
     ...category,
     name: `${category.code} - ${category.label}`,
   }));
-
   return (
     <div className="h-72 w-full">
       <ResponsiveContainer width="100%" height="100%">
@@ -42,7 +36,11 @@ export default function FailureCategories({
           data={data}
           margin={{ top: 8, right: 12, bottom: 8, left: 0 }}
         >
-          <CartesianGrid stroke="#1E2A43" strokeDasharray="3 3" vertical={false} />
+          <CartesianGrid
+            stroke="#1E2A43"
+            strokeDasharray="3 3"
+            vertical={false}
+          />
           <XAxis
             dataKey="code"
             tick={{ fontSize: 11, fill: "#94A3B8" }}
@@ -76,12 +74,15 @@ export default function FailureCategories({
               color: "#E2E8F0",
             }}
             labelStyle={{ color: "#94A3B8" }}
-            formatter={(value) => [`${formatNumber(Number(value))} records`, "Count"]}
+            formatter={(value) => [
+              `${formatNumber(Number(value))} records`,
+              "Count",
+            ]}
           />
           <Bar dataKey="count" radius={[4, 4, 0, 0]} isAnimationActive={false}>
-            {data.map((_, index) => (
+            {data.map((entry, index) => (
               <Cell
-                key={index}
+                key={entry.code}
                 fill={BAR_COLORS[index % BAR_COLORS.length]}
               />
             ))}

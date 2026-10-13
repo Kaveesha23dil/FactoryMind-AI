@@ -9,6 +9,8 @@ from fastapi import APIRouter, HTTPException, Query
 from services.api import data
 from services.api.core import config
 
+MACHINE_FAILURE_COLUMN = "Machine failure"
+
 router = APIRouter(tags=["dataset"])
 
 
@@ -28,7 +30,7 @@ def health():
 def dataset_summary():
     frame = data.get_dataset()
     total = int(len(frame))
-    failures = int((frame["Machine failure"] == 1).sum())
+    failures = int((frame[MACHINE_FAILURE_COLUMN] == 1).sum())
     normal = total - failures
 
     failure_categories = [
@@ -72,9 +74,9 @@ def telemetry(
         frame = frame[frame["UDI"] == record_id]
 
     if failure_only:
-        frame = frame[frame["Machine failure"] == 1]
+        frame = frame[frame[MACHINE_FAILURE_COLUMN] == 1]
     elif normal_only:
-        frame = frame[frame["Machine failure"] == 0]
+        frame = frame[frame[MACHINE_FAILURE_COLUMN] == 0]
 
     if machine_type:
         frame = frame[frame["Type"] == machine_type.upper()]
@@ -94,7 +96,9 @@ def telemetry(
     }
 
 
-@router.get("/api/telemetry/{record_id}")
+@router.get(
+    "/api/telemetry/{record_id}", responses={404: {"description": "Resource not found"}}
+)
 def telemetry_record(record_id: int):
     frame = data.get_dataset()
     match = frame[frame["UDI"] == record_id]

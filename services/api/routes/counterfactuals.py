@@ -32,6 +32,11 @@ def get_service() -> CounterfactualService:
 @router.post(
     "/api/investigations/{investigation_id}/counterfactual",
     response_model=CounterfactualScenario,
+    responses={
+        400: {"description": "Invalid request"},
+        404: {"description": "Resource not found"},
+        409: {"description": "Conflict"},
+    },
 )
 def create_counterfactual(
     investigation_id: str, request: CounterfactualRequest
@@ -53,6 +58,7 @@ def create_counterfactual(
 @router.get(
     "/api/investigations/{investigation_id}/counterfactuals",
     response_model=CounterfactualListResponse,
+    responses={404: {"description": "Resource not found"}},
 )
 def list_counterfactuals(investigation_id: str) -> dict:
     try:
@@ -64,6 +70,7 @@ def list_counterfactuals(investigation_id: str) -> dict:
 @router.get(
     "/api/counterfactuals/{scenario_id}",
     response_model=CounterfactualScenario,
+    responses={404: {"description": "Resource not found"}},
 )
 def get_counterfactual(scenario_id: str) -> dict:
     try:

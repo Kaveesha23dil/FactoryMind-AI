@@ -1,5 +1,4 @@
 "use client";
-
 import {
   CartesianGrid,
   Line,
@@ -12,12 +11,10 @@ import {
 import type { TelemetryRecord } from "@/types/monitoring";
 import { formatDecimal, formatNumber } from "@/lib/format";
 import ChartCard from "@/components/charts/ChartCard";
-
 interface SensorMetricsProps {
   records: TelemetryRecord[];
   maxSamples?: number;
 }
-
 interface MetricDefinition {
   key: "speed" | "torque" | "wear";
   title: string;
@@ -26,7 +23,6 @@ interface MetricDefinition {
   color: string;
   decimals: number;
 }
-
 const METRICS: MetricDefinition[] = [
   {
     key: "speed",
@@ -53,20 +49,23 @@ const METRICS: MetricDefinition[] = [
     decimals: 0,
   },
 ];
-
 function MetricLineChart({
   data,
   metric,
-}: {
-  data: Array<{ sample: number; speed: number; torque: number; wear: number }>;
+}: Readonly<{
+  data: Array<{
+    sample: number;
+    speed: number;
+    torque: number;
+    wear: number;
+  }>;
   metric: MetricDefinition;
-}) {
+}>) {
   const decimals = metric.decimals;
   const formatValue = (value: number) =>
     decimals > 0
       ? formatDecimal(value, decimals)
       : formatNumber(Math.round(value));
-
   return (
     <div className="h-44 w-full">
       <ResponsiveContainer width="100%" height="100%">
@@ -80,7 +79,7 @@ function MetricLineChart({
             tick={{ fontSize: 10, fill: "#94A3B8" }}
             tickLine={{ stroke: "#1E2A43" }}
             axisLine={{ stroke: "#1E2A43" }}
-            tickFormatter={(value) => String(value)}
+            tickFormatter={String}
           />
           <YAxis
             tick={{ fontSize: 10, fill: "#94A3B8" }}
@@ -98,7 +97,9 @@ function MetricLineChart({
             }}
             labelStyle={{ color: "#94A3B8" }}
             labelFormatter={(label) => `Dataset record #${label}`}
-            formatter={(value) => [`${formatValue(Number(value))} ${metric.unit}`]}
+            formatter={(value) => [
+              `${formatValue(Number(value))} ${metric.unit}`,
+            ]}
           />
           <Line
             name={metric.title}
@@ -115,18 +116,16 @@ function MetricLineChart({
     </div>
   );
 }
-
 export default function SensorMetrics({
   records,
   maxSamples = 300,
-}: SensorMetricsProps) {
+}: Readonly<SensorMetricsProps>) {
   const data = records.slice(0, maxSamples).map((record, index) => ({
     sample: index + 1,
     speed: record.rotational_speed_rpm,
     torque: record.torque_nm,
     wear: record.tool_wear_min,
   }));
-
   if (data.length === 0) {
     return (
       <p className="py-12 text-center text-xs text-slate-500">
@@ -134,7 +133,6 @@ export default function SensorMetrics({
       </p>
     );
   }
-
   return (
     <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
       {METRICS.map((metric) => (

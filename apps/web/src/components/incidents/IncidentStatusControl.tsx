@@ -1,5 +1,4 @@
 "use client";
-
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { ApiError, updateIncidentStatus } from "@/lib/api";
@@ -12,25 +11,22 @@ import {
   INCIDENT_STATUS_TONE,
 } from "@/lib/severity";
 import { cn } from "@/lib/format";
-
 interface IncidentStatusControlProps {
   incident: Incident;
   onUpdated: (incident: Incident) => void;
 }
-
 export default function IncidentStatusControl({
   incident,
   onUpdated,
-}: IncidentStatusControlProps) {
+}: Readonly<IncidentStatusControlProps>) {
   const allowed = INCIDENT_ALLOWED_TRANSITIONS[incident.status];
   const [nextStatus, setNextStatus] = useState<IncidentStatus>(
-    allowed[0] ?? incident.status
+    allowed[0] ?? incident.status,
   );
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-
   async function handleSubmit() {
     setSubmitting(true);
     setError(null);
@@ -39,29 +35,31 @@ export default function IncidentStatusControl({
       const updated = await updateIncidentStatus(
         incident.incident_id,
         nextStatus,
-        note.trim() === "" ? undefined : note.trim()
+        note.trim() === "" ? undefined : note.trim(),
       );
       onUpdated(updated);
       setNextStatus(
-        INCIDENT_ALLOWED_TRANSITIONS[updated.status][0] ?? updated.status
+        INCIDENT_ALLOWED_TRANSITIONS[updated.status][0] ?? updated.status,
       );
       setNote("");
       setSuccess(
-        `Status updated to ${INCIDENT_STATUS_LABELS[updated.status]}.`
+        `Status updated to ${INCIDENT_STATUS_LABELS[updated.status]}.`,
       );
     } catch (err) {
       setError(
-        err instanceof ApiError
-          ? err.message
-          : err instanceof Error
+        (function resolveDisplay() {
+          if (err instanceof ApiError) {
+            return err.message;
+          }
+          return err instanceof Error
             ? err.message
-            : "Could not update the incident status."
+            : "Could not update the incident status.";
+        })(),
       );
     } finally {
       setSubmitting(false);
     }
   }
-
   return (
     <div className="rounded-md border border-line bg-surface-raised p-4">
       <div className="flex items-center justify-between gap-3">
@@ -128,7 +126,7 @@ export default function IncidentStatusControl({
           disabled={submitting}
           className={cn(
             "inline-flex items-center gap-1.5 rounded-md border border-accent/40 bg-accent/15 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-accent/25 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none",
-            submitting && "cursor-not-allowed opacity-60"
+            submitting && "cursor-not-allowed opacity-60",
           )}
         >
           {submitting && (

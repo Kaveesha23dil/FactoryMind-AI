@@ -94,8 +94,10 @@ class CounterfactualService:
 
         cleaned = self._validate_exclusions(excluded_evidence_ids, by_id, evidence)
 
-        excluded_features, provenance = resolve_excluded_features(set(cleaned), evidence)
-        kept_records, dropped_records = filter_evidence_records(
+        excluded_features, provenance = resolve_excluded_features(
+            set(cleaned), evidence
+        )
+        kept_records, _ = filter_evidence_records(
             evidence, set(cleaned), excluded_features
         )
         if not kept_records:
@@ -176,14 +178,14 @@ class CounterfactualService:
             revised = self.investigations.get(revised_investigation_id)
             if revised["status"] != "completed" or not revised.get("report"):
                 raise CounterfactualError(
-                    revised.get("error") or "The revised investigation did not complete."
+                    revised.get("error")
+                    or "The revised investigation did not complete."
                 )
             comparison = compare_reports(
                 original_report=original["report"],
                 revised_report=revised["report"],
                 anomaly_original=anomaly_original,
                 anomaly_revised=anomaly_revised,
-                original_evidence=evidence,
                 revised_evidence=revised_evidence,
                 excluded_evidence_ids=cleaned,
                 excluded_feature_keys=sorted(excluded_features),
@@ -240,9 +242,7 @@ class CounterfactualService:
             )
         unknown = [item for item in cleaned if item not in by_id]
         if unknown:
-            raise InvalidExclusionError(
-                "Unknown evidence ID(s): " + ", ".join(unknown)
-            )
+            raise InvalidExclusionError("Unknown evidence ID(s): " + ", ".join(unknown))
         disallowed = [
             item
             for item in cleaned
@@ -253,9 +253,7 @@ class CounterfactualService:
                 "Evidence cannot be excluded: " + ", ".join(disallowed)
             )
         if len(cleaned) >= len(evidence):
-            raise InvalidExclusionError(
-                "The entire evidence base cannot be excluded."
-            )
+            raise InvalidExclusionError("The entire evidence base cannot be excluded.")
         return cleaned
 
     @staticmethod

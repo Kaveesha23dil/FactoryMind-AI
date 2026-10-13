@@ -23,7 +23,7 @@ from services.api.tests.conftest import (
 )
 
 
-@pytest.fixture()
+@pytest.fixture
 def graph_env(tmp_path):
     incident_service = IncidentService(
         SqliteIncidentRepository(Database(tmp_path / "api.db"))
@@ -61,9 +61,9 @@ def anomaly_ids():
 
 
 def _investigation_id(client, record_id: int) -> str:
-    incident_id = client.post(
-        "/api/incidents", json={"record_id": record_id}
-    ).json()["incident_id"]
+    incident_id = client.post("/api/incidents", json={"record_id": record_id}).json()[
+        "incident_id"
+    ]
     return client.post(f"/api/incidents/{incident_id}/investigate").json()[
         "investigation_id"
     ]
@@ -79,7 +79,12 @@ def test_graph_contains_incident_evidence_hypotheses_and_actions(
 
     node_ids = {node["id"] for node in graph["nodes"]}
     node_types = {node["type"] for node in graph["nodes"]}
-    assert {"incident", "sensor_evidence", "hypothesis", "recommended_action"} <= node_types
+    assert {
+        "incident",
+        "sensor_evidence",
+        "hypothesis",
+        "recommended_action",
+    } <= node_types
     assert graph["node_count"] == len(graph["nodes"])
     assert graph["edge_count"] == len(graph["edges"])
 
@@ -110,6 +115,4 @@ def test_graph_is_deterministic(client, graph_env, anomaly_ids):
 
 
 def test_graph_unknown_investigation_404(client, graph_env):
-    assert (
-        client.get("/api/investigations/INV-NOPE/graph").status_code == 404
-    )
+    assert client.get("/api/investigations/INV-NOPE/graph").status_code == 404

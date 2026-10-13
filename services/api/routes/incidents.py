@@ -35,7 +35,16 @@ def get_service() -> IncidentService:
     return _service
 
 
-@router.post("", response_model=Incident, status_code=201)
+@router.post(
+    "",
+    response_model=Incident,
+    status_code=201,
+    responses={
+        404: {"description": "Resource not found"},
+        409: {"description": "Conflict"},
+        422: {"description": "Validation error"},
+    },
+)
 def create_incident(payload: IncidentCreate):
     try:
         return get_service().create_incident(payload.record_id, payload.note)
@@ -53,7 +62,11 @@ def create_incident(payload: IncidentCreate):
         ) from exc
 
 
-@router.post("/scan", response_model=ScanResponse)
+@router.post(
+    "/scan",
+    response_model=ScanResponse,
+    responses={422: {"description": "Validation error"}},
+)
 def scan_incidents(payload: ScanRequest):
     if payload.max_incidents > config.SCAN_MAX_INCIDENTS_LIMIT:
         raise HTTPException(
@@ -67,7 +80,11 @@ def scan_incidents(payload: ScanRequest):
     )
 
 
-@router.get("", response_model=IncidentListResponse)
+@router.get(
+    "",
+    response_model=IncidentListResponse,
+    responses={422: {"description": "Validation error"}},
+)
 def list_incidents(
     limit: int = Query(20, ge=1, le=200),
     offset: int = Query(0, ge=0),
@@ -83,7 +100,11 @@ def list_incidents(
     )
 
 
-@router.get("/{incident_id}", response_model=Incident)
+@router.get(
+    "/{incident_id}",
+    response_model=Incident,
+    responses={404: {"description": "Resource not found"}},
+)
 def get_incident(incident_id: str):
     try:
         return get_service().get_incident(incident_id)
@@ -91,7 +112,14 @@ def get_incident(incident_id: str):
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
-@router.patch("/{incident_id}/status", response_model=Incident)
+@router.patch(
+    "/{incident_id}/status",
+    response_model=Incident,
+    responses={
+        404: {"description": "Resource not found"},
+        409: {"description": "Conflict"},
+    },
+)
 def update_status(incident_id: str, payload: IncidentStatusUpdate):
     try:
         return get_service().update_status(incident_id, payload.status, payload.note)
@@ -103,7 +131,10 @@ def update_status(incident_id: str, payload: IncidentStatusUpdate):
         raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
-@router.get("/{incident_id}/investigation-payload")
+@router.get(
+    "/{incident_id}/investigation-payload",
+    responses={404: {"description": "Resource not found"}},
+)
 def investigation_payload(incident_id: str):
     """Prepare (but do not execute) the Step 4 AI investigation payload."""
     try:

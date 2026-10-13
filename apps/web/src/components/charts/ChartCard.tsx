@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import { Info } from "lucide-react";
 import { cn } from "@/lib/format";
-
 interface ChartCardProps {
   title: string;
   description?: string;
@@ -10,7 +9,6 @@ interface ChartCardProps {
   children: ReactNode;
   className?: string;
 }
-
 export default function ChartCard({
   title,
   description,
@@ -18,12 +16,12 @@ export default function ChartCard({
   actions,
   children,
   className,
-}: ChartCardProps) {
+}: Readonly<ChartCardProps>) {
   return (
     <section
       className={cn(
         "flex flex-col rounded-lg border border-line bg-surface p-5",
-        className
+        className,
       )}
     >
       <div className="flex flex-wrap items-start justify-between gap-3">

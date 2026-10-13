@@ -1,0 +1,13 @@
+.gcloudignore
+.git
+#!include:.gitignore
+**/node_modules/**
+**/.venv/**
+**/.next/**
+**/.env*
+**/*credentials*.json
+**/*service-account*.json
+**/*.pem
+**/*.key
+.migration/**
+deploy/*.env.yaml

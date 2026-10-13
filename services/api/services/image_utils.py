@@ -12,6 +12,16 @@ MIME_JPEG = "image/jpeg"
 MIME_GIF = "image/gif"
 MIME_WEBP = "image/webp"
 
+
+def verify_image(data):
+    """Production decoding guard, in addition to MIME sniffing and byte limits."""
+    from PIL import Image
+    from io import BytesIO
+    with Image.open(BytesIO(data)) as image:
+        if image.width <= 0 or image.height <= 0 or image.width * image.height > 40_000_000:
+            raise ValueError('Image dimensions exceed the supported budget')
+        image.verify()
+
 _DATA_URI_MIME = {
     MIME_PNG: ".png",
     MIME_JPEG: ".jpg",

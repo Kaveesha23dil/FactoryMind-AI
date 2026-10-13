@@ -308,6 +308,20 @@ VISUAL_MAX_IMAGE_BYTES = _env_int("FACTORYMIND_VISUAL_MAX_IMAGE_BYTES", 5 * 1024
 
 @dataclass(frozen=True)
 class Settings:
+    app_env: str = field(default_factory=lambda: os.environ.get('FACTORYMIND_ENV', 'production' if os.environ.get('K_SERVICE') else 'development'))
+    persistence_backend: str = field(default_factory=lambda: os.environ.get('FACTORYMIND_PERSISTENCE', 'sqlite'))
+    firestore_database: str = field(default_factory=lambda: os.environ.get('FACTORYMIND_FIRESTORE_DATABASE', '(default)'))
+    firestore_prefix: str = field(default_factory=lambda: os.environ.get('FACTORYMIND_FIRESTORE_PREFIX', 'factorymind'))
+    upload_backend: str = field(default_factory=lambda: os.environ.get('FACTORYMIND_UPLOAD_BACKEND', 'local'))
+    upload_bucket: str | None = field(default_factory=lambda: os.environ.get('FACTORYMIND_UPLOAD_BUCKET'))
+    auth_audience: str | None = field(default_factory=lambda: os.environ.get('FACTORYMIND_AUTH_AUDIENCE'))
+    api_callers: list[str] = field(default_factory=lambda: _env_list('FACTORYMIND_API_CALLERS', []))
+    worker_callers: list[str] = field(default_factory=lambda: _env_list('FACTORYMIND_WORKER_CALLERS', []))
+    job_dispatch: str = field(default_factory=lambda: os.environ.get('FACTORYMIND_JOB_DISPATCH', 'thread'))
+    tasks_queue: str | None = field(default_factory=lambda: os.environ.get('FACTORYMIND_TASKS_QUEUE'))
+    tasks_target: str | None = field(default_factory=lambda: os.environ.get('FACTORYMIND_TASKS_TARGET'))
+    tasks_service_account: str | None = field(default_factory=lambda: os.environ.get('FACTORYMIND_TASKS_SERVICE_ACCOUNT'))
+    tasks_deadline: int = field(default_factory=lambda: _env_int('FACTORYMIND_TASKS_DEADLINE', 900))
     dataset_path: Path = field(
         default_factory=lambda: Path(
             os.environ.get("FACTORYMIND_DATASET_PATH", str(DEFAULT_DATASET_PATH))

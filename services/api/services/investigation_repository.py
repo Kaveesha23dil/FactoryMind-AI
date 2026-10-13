@@ -16,7 +16,7 @@ from typing import Any
 from services.api.db.database import Database
 from services.api.services.incident_service import InvalidTransitionError
 
-_JSON_COLUMNS = {"stage_history", "agent_activity", "report"}
+_JSON_COLUMNS = {"stage_history", "agent_activity", "report", "prepared_context"}
 
 
 def _utcnow_iso() -> str:
@@ -98,6 +98,7 @@ class SqliteInvestigationRepository(InvestigationRepository):
             "stage_history": json.loads(row["stage_history"] or "[]"),
             "agent_activity": json.loads(row["agent_activity"] or "[]"),
             "report": json.loads(row["report"]) if row["report"] else None,
+            "prepared_context": json.loads(row['prepared_context']) if row['prepared_context'] else None,
         }
 
     def insert(self, job: dict) -> None:
@@ -210,6 +211,7 @@ class SqliteInvestigationRepository(InvestigationRepository):
                 "status", "stage", "summary", "report", "error", "attempt_count",
                 "started_at", "completed_at", "updated_at", "stage_history",
                 "agent_activity",
+                "prepared_context",
             }:
                 raise InvalidTransitionError(f"Unknown investigation column '{key}'")
             assignments.append(f"{key} = ?")

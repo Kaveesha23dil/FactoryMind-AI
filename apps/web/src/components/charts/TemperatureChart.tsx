@@ -1,5 +1,4 @@
 "use client";
-
 import {
   CartesianGrid,
   Legend,
@@ -12,22 +11,19 @@ import {
 } from "recharts";
 import type { TelemetryRecord } from "@/types/monitoring";
 import { formatDecimal } from "@/lib/format";
-
 interface TemperatureChartProps {
   records: TelemetryRecord[];
   maxSamples?: number;
 }
-
 export default function TemperatureChart({
   records,
   maxSamples = 300,
-}: TemperatureChartProps) {
+}: Readonly<TemperatureChartProps>) {
   const data = records.slice(0, maxSamples).map((record) => ({
     sample: record.record_id,
     air: record.air_temperature_c,
     process: record.process_temperature_c,
   }));
-
   if (data.length === 0) {
     return (
       <p className="py-12 text-center text-xs text-slate-500">
@@ -35,13 +31,10 @@ export default function TemperatureChart({
       </p>
     );
   }
-
   return (
     <div className="h-72 w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <ScatterChart
-          margin={{ top: 8, right: 12, bottom: 8, left: 4 }}
-        >
+        <ScatterChart margin={{ top: 8, right: 12, bottom: 8, left: 4 }}>
           <CartesianGrid stroke="#1E2A43" strokeDasharray="3 3" />
           <XAxis
             dataKey="sample"
@@ -97,13 +90,19 @@ export default function TemperatureChart({
           />
           <Scatter
             name="Air temperature"
-            data={data.map((sample) => ({ sample: sample.sample, temperature: sample.air }))}
+            data={data.map((sample) => ({
+              sample: sample.sample,
+              temperature: sample.air,
+            }))}
             fill="#38BDF8"
             isAnimationActive={false}
           />
           <Scatter
             name="Process temperature"
-            data={data.map((sample) => ({ sample: sample.sample, temperature: sample.process }))}
+            data={data.map((sample) => ({
+              sample: sample.sample,
+              temperature: sample.process,
+            }))}
             fill="#F59E0B"
             isAnimationActive={false}
           />

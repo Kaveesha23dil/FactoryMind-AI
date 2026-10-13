@@ -170,9 +170,9 @@ MAD_SCALE = 1.4826
 FEATURE_Z_THRESHOLD = _env_float("FACTORYMIND_FEATURE_Z_THRESHOLD", 3.0)
 
 #: Overall anomaly-score threshold. Values at or above this count as an
-#: anomaly. The validation-split optimum is ~4.04 (see the evaluation
-#: report); it is rounded to 4.0 here so the severity bands align to clean
-#: multiples. It was never tuned on the final test split.
+#: anomaly. This application-defined default keeps severity bands at clean
+#: multiples. Validation-only tuning is reported separately and never changes
+#: the configured threshold based on final test-set labels.
 ANOMALY_SCORE_THRESHOLD = _env_float("FACTORYMIND_ANOMALY_SCORE_THRESHOLD", 4.0)
 
 #: Severity is derived from multiples of the overall threshold:
@@ -308,63 +308,78 @@ VISUAL_MAX_IMAGE_BYTES = _env_int("FACTORYMIND_VISUAL_MAX_IMAGE_BYTES", 5 * 1024
 
 @dataclass(frozen=True)
 class Settings:
-    dataset_path: Path = field(default_factory=lambda: Path(
-        os.environ.get("FACTORYMIND_DATASET_PATH", str(DEFAULT_DATASET_PATH))
-    ))
-    database_path: Path = field(default_factory=lambda: Path(
-        os.environ.get("FACTORYMIND_DB_PATH", str(DEFAULT_DB_PATH))
-    ))
-    cors_origins: list[str] = field(default_factory=lambda: _env_list(
-        "FACTORYMIND_CORS_ORIGINS",
-        ["http://localhost:3000", "http://127.0.0.1:3000"],
-    ))
-    log_level: str = field(default_factory=lambda: os.environ.get(
-        "FACTORYMIND_LOG_LEVEL", "INFO"
-    ))
+    dataset_path: Path = field(
+        default_factory=lambda: Path(
+            os.environ.get("FACTORYMIND_DATASET_PATH", str(DEFAULT_DATASET_PATH))
+        )
+    )
+    database_path: Path = field(
+        default_factory=lambda: Path(
+            os.environ.get("FACTORYMIND_DB_PATH", str(DEFAULT_DB_PATH))
+        )
+    )
+    cors_origins: list[str] = field(
+        default_factory=lambda: _env_list(
+            "FACTORYMIND_CORS_ORIGINS",
+            ["http://localhost:3000", "http://127.0.0.1:3000"],
+        )
+    )
+    log_level: str = field(
+        default_factory=lambda: os.environ.get("FACTORYMIND_LOG_LEVEL", "INFO")
+    )
 
     # -- AI investigation -------------------------------------------------
-    ai_provider: str = field(default_factory=lambda: (
-        os.environ.get("AI_PROVIDER", "google").strip().lower() or "google"
-    ))
-    gemini_model: str = field(default_factory=lambda: (
-        os.environ.get("GEMINI_MODEL", "gemini-2.5-flash").strip()
-        or "gemini-2.5-flash"
-    ))
-    google_api_key: str | None = field(default_factory=lambda: (
-        os.environ.get("GOOGLE_API_KEY") or None
-    ))
-    use_vertex_ai: bool = field(default_factory=lambda: _env_bool(
-        "GOOGLE_GENAI_USE_VERTEXAI", False
-    ))
-    gcp_project: str | None = field(default_factory=lambda: (
-        os.environ.get("GOOGLE_CLOUD_PROJECT") or None
-    ))
-    gcp_location: str | None = field(default_factory=lambda: (
-        os.environ.get("GOOGLE_CLOUD_LOCATION") or None
-    ))
-    ai_investigation_enabled: bool = field(default_factory=lambda: _env_bool(
-        "AI_INVESTIGATION_ENABLED", True
-    ))
-    investigation_timeout_seconds: float = field(default_factory=lambda: _env_float(
-        "FACTORYMIND_INVESTIGATION_TIMEOUT_SECONDS", 90.0
-    ))
-    investigation_max_retries: int = field(default_factory=lambda: _env_int(
-        "FACTORYMIND_INVESTIGATION_MAX_RETRIES", 1
-    ))
-    investigation_max_hypotheses: int = field(default_factory=lambda: _env_int(
-        "FACTORYMIND_INVESTIGATION_MAX_HYPOTHESES", 4
-    ))
-    investigation_async: bool = field(default_factory=lambda: _env_bool(
-        "FACTORYMIND_INVESTIGATION_ASYNC", True
-    ))
-    worker_secret: str | None = field(default_factory=lambda: (
-        os.environ.get("FACTORYMIND_WORKER_SECRET") or None
-    ))
-    visual_storage_dir: Path = field(default_factory=lambda: Path(
-        os.environ.get(
-            "FACTORYMIND_VISUAL_STORAGE_DIR", str(API_ROOT / "data" / "visual_evidence")
+    ai_provider: str = field(
+        default_factory=lambda: (
+            os.environ.get("AI_PROVIDER", "google").strip().lower() or "google"
         )
-    ))
+    )
+    gemini_model: str = field(
+        default_factory=lambda: (
+            os.environ.get("GEMINI_MODEL", "gemini-3.8-flash").strip()
+            or "gemini-3.8-flash"
+        )
+    )
+    google_api_key: str | None = field(
+        default_factory=lambda: (os.environ.get("GOOGLE_API_KEY") or None)
+    )
+    use_vertex_ai: bool = field(
+        default_factory=lambda: _env_bool("GOOGLE_GENAI_USE_VERTEXAI", False)
+    )
+    gcp_project: str | None = field(
+        default_factory=lambda: (os.environ.get("GOOGLE_CLOUD_PROJECT") or None)
+    )
+    gcp_location: str | None = field(
+        default_factory=lambda: (os.environ.get("GOOGLE_CLOUD_LOCATION") or None)
+    )
+    ai_investigation_enabled: bool = field(
+        default_factory=lambda: _env_bool("AI_INVESTIGATION_ENABLED", True)
+    )
+    investigation_timeout_seconds: float = field(
+        default_factory=lambda: _env_float(
+            "FACTORYMIND_INVESTIGATION_TIMEOUT_SECONDS", 90.0
+        )
+    )
+    investigation_max_retries: int = field(
+        default_factory=lambda: _env_int("FACTORYMIND_INVESTIGATION_MAX_RETRIES", 1)
+    )
+    investigation_max_hypotheses: int = field(
+        default_factory=lambda: _env_int("FACTORYMIND_INVESTIGATION_MAX_HYPOTHESES", 4)
+    )
+    investigation_async: bool = field(
+        default_factory=lambda: _env_bool("FACTORYMIND_INVESTIGATION_ASYNC", True)
+    )
+    worker_secret: str | None = field(
+        default_factory=lambda: (os.environ.get("FACTORYMIND_WORKER_SECRET") or None)
+    )
+    visual_storage_dir: Path = field(
+        default_factory=lambda: Path(
+            os.environ.get(
+                "FACTORYMIND_VISUAL_STORAGE_DIR",
+                str(API_ROOT / "data" / "visual_evidence"),
+            )
+        )
+    )
 
 
 settings = Settings()

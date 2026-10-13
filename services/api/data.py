@@ -82,7 +82,9 @@ def to_measurement(row) -> dict:
         "rotational_speed_rpm": int(row["Rotational speed [rpm]"]),
         "torque_nm": float(row["Torque [Nm]"]),
         "tool_wear_min": int(row["Tool wear [min]"]),
-        "derived_features": {key: round(float(value), 4) for key, value in features.items()},
+        "derived_features": {
+            key: round(float(value), 4) for key, value in features.items()
+        },
     }
 
 
@@ -117,7 +119,7 @@ def split_dataset(frame: pd.DataFrame | None = None):
     """
     data = get_dataset() if frame is None else frame
     indices = np.arange(len(data))
-    rng = np.random.RandomState(config.RANDOM_SEED)
+    rng = np.random.default_rng(config.RANDOM_SEED)
     rng.shuffle(indices)
 
     n = len(indices)

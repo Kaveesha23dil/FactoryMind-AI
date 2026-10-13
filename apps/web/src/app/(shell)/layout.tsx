@@ -1,10 +1,9 @@
 import AppSidebar from "@/components/layout/AppSidebar";
-
 export default function ShellLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   return (
     <div className="min-h-screen bg-background lg:flex">
       <AppSidebar />

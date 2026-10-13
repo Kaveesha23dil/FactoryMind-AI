@@ -27,7 +27,7 @@ from services.api.tests.conftest import (
 )
 
 
-@pytest.fixture()
+@pytest.fixture
 def counterfactual_env(tmp_path):
     incident_service = IncidentService(
         SqliteIncidentRepository(Database(tmp_path / "api.db"))
@@ -80,7 +80,9 @@ def _completed_investigation(client, incident_id: str) -> str:
 
 
 def _evidence_items(client, investigation_id: str) -> list[dict]:
-    return client.get(f"/api/investigations/{investigation_id}/evidence").json()["items"]
+    return client.get(f"/api/investigations/{investigation_id}/evidence").json()[
+        "items"
+    ]
 
 
 def test_counterfactual_creates_isolated_revision(
@@ -120,7 +122,9 @@ def test_counterfactual_creates_isolated_revision(
     # Original investigation is untouched.
     original = client.get(f"/api/investigations/{investigation_id}").json()
     assert original["status"] == "completed"
-    original_ids = {item["evidence_id"] for item in _evidence_items(client, investigation_id)}
+    original_ids = {
+        item["evidence_id"] for item in _evidence_items(client, investigation_id)
+    }
     assert excluded_id in original_ids
 
     # Revised investigation is a separate, completed record.
@@ -161,7 +165,9 @@ def test_counterfactual_list_and_get(client, counterfactual_env, anomaly_ids):
     incident_id = _create_incident(client, anomaly_ids[2])
     investigation_id = _completed_investigation(client, incident_id)
     evidence = _evidence_items(client, investigation_id)
-    sensor = next(item for item in evidence if item["evidence_type"] == "sensor_measurement")
+    sensor = next(
+        item for item in evidence if item["evidence_type"] == "sensor_measurement"
+    )
 
     scenario = client.post(
         f"/api/investigations/{investigation_id}/counterfactual",

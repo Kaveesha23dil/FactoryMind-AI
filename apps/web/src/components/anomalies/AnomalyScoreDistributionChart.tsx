@@ -1,5 +1,4 @@
 "use client";
-
 import {
   Bar,
   BarChart,
@@ -13,32 +12,33 @@ import {
 } from "recharts";
 import type { ScoreBin } from "@/types/anomaly";
 import { formatNumber } from "@/lib/format";
-
 interface AnomalyScoreDistributionChartProps {
   histogram: ScoreBin[];
   threshold: number;
 }
-
 export default function AnomalyScoreDistributionChart({
   histogram,
   threshold,
-}: AnomalyScoreDistributionChartProps) {
+}: Readonly<AnomalyScoreDistributionChartProps>) {
   const data = histogram.map((bin) => ({
     label: `${bin.bin_start.toFixed(1)}`,
     range: `${bin.bin_start.toFixed(2)} – ${bin.bin_end.toFixed(2)}`,
     count: bin.count,
     anomalous: bin.bin_start >= threshold,
   }));
-
-  const thresholdIndex = histogram.findIndex(
-    (bin) => bin.bin_end > threshold
-  );
-
+  const thresholdIndex = histogram.findIndex((bin) => bin.bin_end > threshold);
   return (
     <div className="h-64 w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 8, right: 12, bottom: 8, left: 0 }}>
-          <CartesianGrid stroke="#1E2A43" strokeDasharray="3 3" vertical={false} />
+        <BarChart
+          data={data}
+          margin={{ top: 8, right: 12, bottom: 8, left: 0 }}
+        >
+          <CartesianGrid
+            stroke="#1E2A43"
+            strokeDasharray="3 3"
+            vertical={false}
+          />
           <XAxis
             dataKey="label"
             tick={{ fontSize: 10, fill: "#94A3B8" }}
@@ -103,8 +103,11 @@ export default function AnomalyScoreDistributionChart({
             />
           )}
           <Bar dataKey="count" radius={[3, 3, 0, 0]} isAnimationActive={false}>
-            {data.map((entry, index) => (
-              <Cell key={index} fill={entry.anomalous ? "#EF4444" : "#2251FF"} />
+            {data.map((entry) => (
+              <Cell
+                key={entry.range}
+                fill={entry.anomalous ? "#EF4444" : "#2251FF"}
+              />
             ))}
           </Bar>
         </BarChart>

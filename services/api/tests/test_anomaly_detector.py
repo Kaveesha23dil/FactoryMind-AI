@@ -93,10 +93,12 @@ def test_missing_feature_raises():
 def test_non_finite_values_raise():
     frame = make_feature_frame(torque=[10, 20, 30], wear=[1, 2, 3])
     detector = _detector().fit(frame)
+    nan_value = float("nan")
     with pytest.raises(ValueError, match="not finite"):
-        detector.score({"torque_nm": float("nan"), "tool_wear_min": 2.0})
+        detector.score({"torque_nm": nan_value, "tool_wear_min": 2.0})
+    infinite_value = float("inf")
     with pytest.raises(ValueError, match="not finite"):
-        detector.score({"torque_nm": float("inf"), "tool_wear_min": 2.0})
+        detector.score({"torque_nm": infinite_value, "tool_wear_min": 2.0})
 
 
 def test_ground_truth_columns_never_in_features():
@@ -117,8 +119,9 @@ def test_ground_truth_labels_do_not_affect_scores():
 
 
 def test_score_before_fit_raises():
+    detector = _detector()
     with pytest.raises(RuntimeError, match="must be fit"):
-        _detector().score({"torque_nm": 1.0, "tool_wear_min": 1.0})
+        detector.score({"torque_nm": 1.0, "tool_wear_min": 1.0})
 
 
 def test_severity_bands():
@@ -139,11 +142,13 @@ def test_invalid_threshold_rejected(threshold):
 
 def test_training_rejects_empty_and_nonfinite_data():
     frame = make_feature_frame(torque=[10, 20, 30], wear=[1, 2, 3])
+    empty_training_detector = _detector()
     with pytest.raises(ValueError, match="empty"):
-        _detector().fit(frame.iloc[:0])
+        empty_training_detector.fit(frame.iloc[:0])
     frame.loc[0, "Torque [Nm]"] = float("nan")
+    invalid_training_detector = _detector()
     with pytest.raises(ValueError, match="not finite"):
-        _detector().fit(frame)
+        invalid_training_detector.fit(frame)
 
 
 def test_negative_overflow_retains_anomaly_direction():

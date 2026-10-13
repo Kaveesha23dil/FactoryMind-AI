@@ -106,7 +106,7 @@ class VisualEvidenceService:
         image_id = f"{config.VISUAL_IMAGE_ID_PREFIX}{uuid.uuid4().hex[:10].upper()}"
         storage_ref = f"{image_id}{image_utils.extension_for(resolved_mime)}"
         self.storage_dir.mkdir(parents=True, exist_ok=True)
-        (self.storage_dir / storage_ref).write_bytes(data)
+        self._path(storage_ref).write_bytes(data)
 
         now = _utcnow_iso()
         self.repository.insert(
@@ -176,9 +176,11 @@ class VisualEvidenceService:
             if investigation_id:
                 self._attach_evidence(image_id, investigation_id, analysis)
         except Exception as exc:  # noqa: BLE001 - persist failure for the UI
-            logger.exception("Visual analysis failed for %s", image_id)
+            logger.exception("Visual analysis failed")
             self.repository.update(
-                image_id, status="failed", error=str(exc),
+                image_id,
+                status="failed",
+                error=str(exc),
                 investigation_id=investigation_id,
             )
         return self.to_public(self.get(image_id))
@@ -199,7 +201,10 @@ class VisualEvidenceService:
 
     def list_for_incident(self, incident_id: str) -> dict:
         self.incident_service.get_incident(incident_id)
-        items = [self.to_public(record) for record in self.repository.list_for_incident(incident_id)]
+        items = [
+            self.to_public(record)
+            for record in self.repository.list_for_incident(incident_id)
+        ]
         return {"incident_id": incident_id, "total": len(items), "items": items}
 
     def content_path(self, image_id: str) -> Path:
@@ -215,15 +220,26 @@ class VisualEvidenceService:
     # -- helpers ---------------------------------------------------------
 
     def _path(self, storage_ref: str) -> Path:
-        return self.storage_dir / storage_ref
+        root = self.storage_dir.resolve()
+        candidate = (root / storage_ref).resolve()
+        if candidate == root or not candidate.is_relative_to(root):
+            raise VisualEvidenceError(
+                "Image storage reference must stay inside the storage directory."
+            )
+        return candidate
 
     def _attach_evidence(self, image_id: str, investigation_id: str, analysis) -> None:
         repository = self.investigations.repository
         existing = repository.get_evidence(investigation_id)
         used_ids = {record["evidence_id"] for record in existing}
-        index = sum(
-            1 for record in existing if record["evidence_type"] == "visual_observation"
-        ) + 1
+        index = (
+            sum(
+                1
+                for record in existing
+                if record["evidence_type"] == "visual_observation"
+            )
+            + 1
+        )
         evidence_id = format_evidence_id("visual_observation", index)
         while evidence_id in used_ids:
             index += 1
@@ -245,7 +261,9 @@ class VisualEvidenceService:
                     "payload": {
                         "image_id": image_id,
                         "storage_reference": record["storage_ref"],
-                        "observations": [item.model_dump() for item in analysis.observations],
+                        "observations": [
+                            item.model_dump() for item in analysis.observations
+                        ],
                         "limitations": list(analysis.limitations),
                     },
                     "created_at": _utcnow_iso(),

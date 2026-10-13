@@ -24,6 +24,7 @@ def get_service() -> EvidenceGraphService:
 @router.get(
     "/api/investigations/{investigation_id}/graph",
     response_model=EvidenceGraph,
+    responses={404: {"description": "Resource not found"}},
 )
 def get_investigation_graph(investigation_id: str):
     try:

@@ -1,19 +1,17 @@
 import { Construction } from "lucide-react";
 import StatusBadge from "@/components/ui/StatusBadge";
-
 interface PagePlaceholderProps {
   title: string;
   subtitle: string;
   plannedFor: string;
   description: string;
 }
-
 export default function PagePlaceholder({
   title,
   subtitle,
   plannedFor,
   description,
-}: PagePlaceholderProps) {
+}: Readonly<PagePlaceholderProps>) {
   return (
     <div className="px-4 py-8 sm:px-6 xl:px-8">
       <div className="rounded-lg border border-dashed border-line bg-surface p-8">
@@ -25,7 +23,12 @@ export default function PagePlaceholder({
             <h1 className="text-xl font-semibold text-white">{title}</h1>
             <p className="text-sm text-slate-400">{subtitle}</p>
           </div>
-          <StatusBadge label="Not implemented yet" tone="danger" dot className="ml-auto" />
+          <StatusBadge
+            label="Not implemented yet"
+            tone="danger"
+            dot
+            className="ml-auto"
+          />
         </div>
 
         <p className="mt-5 max-w-2xl text-sm leading-relaxed text-slate-400">

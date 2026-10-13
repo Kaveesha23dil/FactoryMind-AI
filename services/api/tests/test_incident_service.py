@@ -63,8 +63,10 @@ def test_record_not_found(tmp_path):
 
 def test_non_anomalous_record_rejected(tmp_path):
     service = _service(tmp_path)
+    engine = get_engine()
+    record_id = normal_record_id(engine)
     with pytest.raises(RecordNotAnomalousError):
-        service.create_incident(normal_record_id(get_engine()))
+        service.create_incident(record_id)
 
 
 def test_status_transitions(tmp_path, anomaly_ids):
@@ -120,7 +122,9 @@ def test_list_and_pagination_and_filters(tmp_path, anomaly_ids):
     assert page["total"] == 4
     assert page["returned"] == 2
 
-    service.update_status(service.list_incidents(limit=1)["items"][0]["incident_id"], "under_review")
+    service.update_status(
+        service.list_incidents(limit=1)["items"][0]["incident_id"], "under_review"
+    )
     under_review = service.list_incidents(status="under_review")
     assert under_review["total"] == 1
 
@@ -159,7 +163,10 @@ def test_snapshot_retains_all_contributions_and_thresholds(tmp_path, anomaly_ids
     service = _service(tmp_path)
     incident = service.create_incident(anomaly_ids[0])
     assert len(incident["evidence"]) == len(get_engine().detector.feature_keys)
-    assert incident["detection_config"]["feature_z_threshold"] == get_engine().detector.feature_z_threshold
+    assert (
+        incident["detection_config"]["feature_z_threshold"]
+        == get_engine().detector.feature_z_threshold
+    )
     reopened = _service(tmp_path).get_incident(incident["incident_id"])
     assert reopened["detection_config"] == incident["detection_config"]
 
@@ -169,10 +176,16 @@ def test_stale_status_update_does_not_append_event(tmp_path, anomaly_ids):
     incident = service.create_incident(anomaly_ids[0])
     service.update_status(incident["incident_id"], "resolved")
     with pytest.raises(InvalidTransitionError, match="changed"):
-        service.repository.update_status(incident["incident_id"], "under_review", {
-            "incident_id": incident["incident_id"], "expected_status": "open",
-            "timestamp": incident["created_at"], "status": "under_review",
-        })
+        service.repository.update_status(
+            incident["incident_id"],
+            "under_review",
+            {
+                "incident_id": incident["incident_id"],
+                "expected_status": "open",
+                "timestamp": incident["created_at"],
+                "status": "under_review",
+            },
+        )
     assert len(service.get_incident(incident["incident_id"])["timeline"]) == 2
 
 

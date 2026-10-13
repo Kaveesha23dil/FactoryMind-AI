@@ -1,8 +1,11 @@
 import { AlertTriangle, Loader2 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/format";
-
-function SkeletonRow({ className }: { className?: string }) {
+function SkeletonRow({
+  className,
+}: Readonly<{
+  className?: string;
+}>) {
   return (
     <div
       className={cn("animate-pulse rounded-md bg-surface-raised", className)}
@@ -10,14 +13,14 @@ function SkeletonRow({ className }: { className?: string }) {
     />
   );
 }
-
-export function CardSkeleton({ className }: { className?: string }) {
+export function CardSkeleton({
+  className,
+}: Readonly<{
+  className?: string;
+}>) {
   return (
     <div
-      className={cn(
-        "rounded-lg border border-line bg-surface p-5",
-        className
-      )}
+      className={cn("rounded-lg border border-line bg-surface p-5", className)}
     >
       <div className="flex items-start justify-between">
         <div className="space-y-3">
@@ -30,7 +33,6 @@ export function CardSkeleton({ className }: { className?: string }) {
     </div>
   );
 }
-
 export function KpiGridSkeleton() {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -40,14 +42,14 @@ export function KpiGridSkeleton() {
     </div>
   );
 }
-
-export function ChartSkeleton({ className }: { className?: string }) {
+export function ChartSkeleton({
+  className,
+}: Readonly<{
+  className?: string;
+}>) {
   return (
     <div
-      className={cn(
-        "rounded-lg border border-line bg-surface p-5",
-        className
-      )}
+      className={cn("rounded-lg border border-line bg-surface p-5", className)}
     >
       <div className="flex flex-col gap-1.5">
         <SkeletonRow className="h-4 w-48" />
@@ -57,7 +59,6 @@ export function ChartSkeleton({ className }: { className?: string }) {
     </div>
   );
 }
-
 export function TableSkeleton() {
   return (
     <div className="overflow-hidden rounded-lg border border-line bg-surface">
@@ -97,31 +98,32 @@ export function TableSkeleton() {
     </div>
   );
 }
-
 interface LoadingOverlayProps {
   label?: string;
 }
-
-export function LoadingIndicator({ label = "Loading" }: LoadingOverlayProps) {
+export function LoadingIndicator({
+  label = "Loading",
+}: Readonly<LoadingOverlayProps>) {
   return (
     <div className="flex items-center gap-2 text-sm text-slate-400">
-      <Loader2 className="h-4 w-4 animate-spin text-cyan-accent" aria-hidden="true" />
+      <Loader2
+        className="h-4 w-4 animate-spin text-cyan-accent"
+        aria-hidden="true"
+      />
       <span className="sr-only">{label}</span>
     </div>
   );
 }
-
 interface EmptyStateProps {
   title: string;
   description: string;
   icon?: LucideIcon;
 }
-
 export function EmptyState({
   title,
   description,
   icon: Icon = AlertTriangle,
-}: EmptyStateProps) {
+}: Readonly<EmptyStateProps>) {
   return (
     <div className="flex flex-col items-center justify-center gap-3 px-6 py-14 text-center">
       <span className="flex h-11 w-11 items-center justify-center rounded-md border border-line bg-surface-raised text-slate-400">
@@ -134,14 +136,16 @@ export function EmptyState({
     </div>
   );
 }
-
 interface ErrorStateProps {
   title: string;
   message: string;
   onRetry?: () => void;
 }
-
-export function ErrorState({ title, message, onRetry }: ErrorStateProps) {
+export function ErrorState({
+  title,
+  message,
+  onRetry,
+}: Readonly<ErrorStateProps>) {
   return (
     <div className="flex flex-col items-center justify-center gap-3 px-6 py-14 text-center">
       <span className="flex h-11 w-11 items-center justify-center rounded-md border border-danger/30 bg-danger/10 text-danger">

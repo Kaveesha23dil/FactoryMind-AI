@@ -34,15 +34,18 @@ medium [5,6), high [6,8), critical >=8. These are application severities.
 Seed 42 splits 10,000 records into 6,000 train / 2,000 validation / 2,000 test.
 Only training fits baselines; threshold selection uses validation only.
 
-| Test metric | Configured 4.0 | Validation-selected 4.0448 |
+| Test metric | Configured 4.0 | Validation-selected 3.3685 |
 |---|---:|---:|
-| Precision | 0.1818 | 0.1630 |
-| Recall | 0.2400 | 0.2000 |
-| F1 | 0.2069 | 0.1796 |
-| False-positive rate | 0.0421 | 0.0400 |
-| TP / TN / FP / FN | 18 / 1844 / 81 / 57 | 15 / 1848 / 77 / 60 |
+| Precision | 0.1695 | 0.1156 |
+| Recall | 0.3571 | 0.4643 |
+| F1 | 0.2299 | 0.1851 |
+| False-positive rate | 0.0504 | 0.1024 |
+| TP / TN / FP / FN | 20 / 1846 / 98 / 36 | 26 / 1745 / 199 / 30 |
 
-The test set has 75 failure labels and 1,925 nonfailures. These results show limited
+Evaluation refreshed on 2026-10-11 after migrating the seeded splitter to
+`numpy.default_rng` (PCG64). This changes the split membership relative to the
+legacy generator while preserving seed reproducibility and split isolation.
+The test set has 56 failure labels and 1,944 nonfailures. These results show limited
 failure-label agreement; unusual observations and failures are different tasks.
 The synthetic, imbalanced data has no real timestamps, vibration, or continuous machine
 identity. Derived features are correlated and the diagonal detector does not model

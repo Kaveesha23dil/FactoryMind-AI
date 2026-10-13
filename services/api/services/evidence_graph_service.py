@@ -71,14 +71,20 @@ def _derived_dependencies() -> dict[str, list[str]]:
     for definition in config.FEATURE_DEFINITIONS:
         if len(definition["columns"]) <= 1:
             continue
-        sources = [column_key[column] for column in definition["columns"] if column in column_key]
+        sources = [
+            column_key[column]
+            for column in definition["columns"]
+            if column in column_key
+        ]
         if sources:
             dependencies[definition["key"]] = sources
     return dependencies
 
 
 class EvidenceGraphService:
-    def __init__(self, investigation_service: InvestigationService | None = None) -> None:
+    def __init__(
+        self, investigation_service: InvestigationService | None = None
+    ) -> None:
         self.investigations = investigation_service or InvestigationService()
 
     def build(self, investigation_id: str) -> EvidenceGraph:
@@ -122,7 +128,32 @@ class EvidenceGraphService:
             )
         )
 
-        # --- Evidence nodes ------------------------------------------------
+        feature_evidence = self._add_evidence_nodes(evidence, add_node)
+
+        self._add_hypothesis_nodes(report, hypotheses, node_ids, add_node)
+
+        self._add_action_nodes(actions, hypotheses, add_node)
+
+        self._add_incident_edges(nodes, edges, node_ids, incident_node_id)
+
+        self._add_hypothesis_edges(hypotheses, edges, node_ids)
+
+        self._add_derived_edges(feature_evidence, edges, node_ids)
+
+        self._add_action_edges(actions, hypotheses, edges, node_ids)
+
+        self._apply_layout(nodes)
+        return EvidenceGraph(
+            investigation_id=investigation_id,
+            incident_id=incident_id,
+            generated_at=_utcnow_iso(),
+            nodes=nodes,
+            edges=edges,
+            node_count=len(nodes),
+            edge_count=len(edges),
+        )
+
+    def _add_evidence_nodes(self, evidence, add_node):
         feature_evidence: dict[str, str] = {}
         for record in evidence:
             evidence_type = record["evidence_type"]
@@ -146,7 +177,9 @@ class EvidenceGraphService:
                 data["robust_zscore"] = payload.get("robust_zscore")
                 data["direction"] = payload.get("direction")
                 data["is_anomalous"] = payload.get("is_anomalous")
-                data["baseline_median"] = payload.get("median", payload.get("baseline_median"))
+                data["baseline_median"] = payload.get(
+                    "median", payload.get("baseline_median")
+                )
                 data["baseline_scope"] = payload.get("scope")
             if evidence_type == "manual_passage":
                 data["document_id"] = payload.get("document_id")
@@ -170,7 +203,9 @@ class EvidenceGraphService:
                     id=record["evidence_id"],
                     type=node_type,
                     label=record["evidence_id"],
-                    sublabel=payload.get("label") or payload.get("document_title") or evidence_type,
+                    sublabel=payload.get("label")
+                    or payload.get("document_title")
+                    or evidence_type,
                     position={"x": _X_GAP * _LAYER.get(node_type, 1), "y": 0.0},
                     data=data,
                 )
@@ -181,8 +216,9 @@ class EvidenceGraphService:
                 and payload["feature"] not in feature_evidence
             ):
                 feature_evidence[payload["feature"]] = record["evidence_id"]
+        return feature_evidence
 
-        # --- Hypothesis nodes ---------------------------------------------
+    def _add_hypothesis_nodes(self, report, hypotheses, node_ids, add_node):
         critic = report.get("critic_review", {}) or {}
         flagged_text = list(critic.get("citation_issues", []) or []) + list(
             critic.get("unsupported_claims", []) or []
@@ -210,8 +246,12 @@ class EvidenceGraphService:
                         "assessment": hypothesis.get("assessment"),
                         "verification_status": hypothesis.get("assessment"),
                         "critic_flagged": flagged,
-                        "supporting_evidence_ids": hypothesis.get("supporting_evidence_ids", []),
-                        "contradicting_evidence_ids": hypothesis.get("contradicting_evidence_ids", []),
+                        "supporting_evidence_ids": hypothesis.get(
+                            "supporting_evidence_ids", []
+                        ),
+                        "contradicting_evidence_ids": hypothesis.get(
+                            "contradicting_evidence_ids", []
+                        ),
                         "missing_evidence": hypothesis.get("missing_evidence", []),
                         "verification_steps": hypothesis.get("verification_steps", []),
                         "layer": _LAYER["hypothesis"],
@@ -219,7 +259,7 @@ class EvidenceGraphService:
                 )
             )
 
-        # --- Recommended action nodes -------------------------------------
+    def _add_action_nodes(self, actions, hypotheses, add_node):
         for index, action in enumerate(actions, start=1):
             action_id = f"ACT-{index:03d}"
             add_node(
@@ -237,14 +277,18 @@ class EvidenceGraphService:
                         "action_id": action_id,
                         "action": action.get("action", ""),
                         "rationale": action.get("rationale", ""),
-                        "requires_human_approval": bool(action.get("requires_human_approval", True)),
-                        "supporting_hypothesis_ids": self._action_hypotheses(action, hypotheses),
+                        "requires_human_approval": bool(
+                            action.get("requires_human_approval", True)
+                        ),
+                        "supporting_hypothesis_ids": self._action_hypotheses(
+                            action, hypotheses
+                        ),
                         "layer": _LAYER["recommended_action"],
                     },
                 )
             )
 
-        # --- Edges: incident relates to every evidence node ----------------
+    def _add_incident_edges(self, nodes, edges, node_ids, incident_node_id):
         for node in nodes:
             if node.type in ("sensor_evidence", "document_evidence", "visual_evidence"):
                 self._add_edge(
@@ -256,23 +300,31 @@ class EvidenceGraphService:
                     label="incident evidence",
                 )
 
-        # --- Edges: hypothesis <-> evidence --------------------------------
+    def _add_hypothesis_edges(self, hypotheses, edges, node_ids):
         for hypothesis in hypotheses:
             hypothesis_id = hypothesis.get("hypothesis_id")
             if hypothesis_id not in node_ids:
                 continue
             for evidence_id in hypothesis.get("supporting_evidence_ids", []) or []:
                 self._add_edge(
-                    edges, node_ids, evidence_id, hypothesis_id, "SUPPORTS",
+                    edges,
+                    node_ids,
+                    evidence_id,
+                    hypothesis_id,
+                    "SUPPORTS",
                     label="supports",
                 )
             for evidence_id in hypothesis.get("contradicting_evidence_ids", []) or []:
                 self._add_edge(
-                    edges, node_ids, evidence_id, hypothesis_id, "CONTRADICTS",
+                    edges,
+                    node_ids,
+                    evidence_id,
+                    hypothesis_id,
+                    "CONTRADICTS",
                     label="contradicts",
                 )
 
-        # --- Edges: derived evidence depends on source evidence ------------
+    def _add_derived_edges(self, feature_evidence, edges, node_ids):
         for derived_key, sources in _derived_dependencies().items():
             derived_id = feature_evidence.get(derived_key)
             if not derived_id:
@@ -281,32 +333,32 @@ class EvidenceGraphService:
                 source_id = feature_evidence.get(source_key)
                 if source_id:
                     self._add_edge(
-                        edges, node_ids, derived_id, source_id, "DERIVED_FROM",
+                        edges,
+                        node_ids,
+                        derived_id,
+                        source_id,
+                        "DERIVED_FROM",
                         label="derived from",
-                        data={"derived_feature": derived_key, "source_feature": source_key},
+                        data={
+                            "derived_feature": derived_key,
+                            "source_feature": source_key,
+                        },
                     )
 
-        # --- Edges: hypothesis recommends action ---------------------------
+    def _add_action_edges(self, actions, hypotheses, edges, node_ids):
         for index, action in enumerate(actions, start=1):
             action_id = f"ACT-{index:03d}"
             if action_id not in node_ids:
                 continue
             for hypothesis_id in self._action_hypotheses(action, hypotheses):
                 self._add_edge(
-                    edges, node_ids, hypothesis_id, action_id, "RECOMMENDS",
+                    edges,
+                    node_ids,
+                    hypothesis_id,
+                    action_id,
+                    "RECOMMENDS",
                     label="recommends",
                 )
-
-        self._apply_layout(nodes)
-        return EvidenceGraph(
-            investigation_id=investigation_id,
-            incident_id=incident_id,
-            generated_at=_utcnow_iso(),
-            nodes=nodes,
-            edges=edges,
-            node_count=len(nodes),
-            edge_count=len(edges),
-        )
 
     @staticmethod
     def _action_hypotheses(

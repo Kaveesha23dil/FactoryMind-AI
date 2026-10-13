@@ -1,5 +1,4 @@
 "use client";
-
 import { useCallback, useEffect, useState } from "react";
 import {
   AlertTriangle,
@@ -13,41 +12,33 @@ import { getHealth, getIncidents, scanIncidents } from "@/lib/api";
 import type { Severity } from "@/types/anomaly";
 import type { ScanResponse } from "@/types/incident";
 import type { BackendStatus } from "@/types/monitoring";
-import { formatNumber } from "@/lib/format";
+import { cn, formatNumber } from "@/lib/format";
 import DashboardHeader from "@/components/layout/DashboardHeader";
 import StatCard from "@/components/dashboard/StatCard";
 import ChartCard from "@/components/charts/ChartCard";
 import IncidentTable from "@/components/incidents/IncidentTable";
 import { KpiGridSkeleton } from "@/components/ui/Feedback";
-import { cn } from "@/lib/format";
-
 type ScanSeverity = Exclude<Severity, "normal">;
-
 const SCAN_SEVERITIES: ScanSeverity[] = ["low", "medium", "high", "critical"];
-
 interface IncidentCounts {
   total: number;
   open: number;
   under_review: number;
   resolved: number;
 }
-
 export default function IncidentManagement() {
-  const [backendStatus, setBackendStatus] =
-    useState<BackendStatus>("checking");
+  const [backendStatus, setBackendStatus] = useState<BackendStatus>("checking");
   const [counts, setCounts] = useState<IncidentCounts | null>(null);
   const [loadingCounts, setLoadingCounts] = useState(true);
   const [countsError, setCountsError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [tableRefreshToken, setTableRefreshToken] = useState(0);
-
   const [scanSeverity, setScanSeverity] = useState<ScanSeverity>("high");
   const [scanMax, setScanMax] = useState(25);
   const [scanDryRun, setScanDryRun] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [scanResult, setScanResult] = useState<ScanResponse | null>(null);
   const [scanError, setScanError] = useState<string | null>(null);
-
   const loadCounts = useCallback(async () => {
     const [all, open, review, resolved] = await Promise.all([
       getIncidents({ limit: 1 }),
@@ -62,21 +53,24 @@ export default function IncidentManagement() {
       resolved: resolved.total,
     } satisfies IncidentCounts;
   }, []);
-
   useEffect(() => {
     let stale = false;
     getHealth()
       .then((health) => {
         if (stale) return;
         setBackendStatus(
-          health.status === "healthy" ? "connected" : "unavailable"
+          (function resolveDisplay() {
+            if (health.status === "healthy") {
+              return "connected";
+            }
+            return "unavailable";
+          })(),
         );
       })
       .catch(() => {
         if (stale) return;
         setBackendStatus("unavailable");
       });
-
     loadCounts()
       .then((result) => {
         if (stale) return;
@@ -87,16 +81,19 @@ export default function IncidentManagement() {
       .catch((err: unknown) => {
         if (stale) return;
         setCountsError(
-          err instanceof Error ? err.message : "Unable to load incident counts."
+          (function resolveDisplay() {
+            if (err instanceof Error) {
+              return err.message;
+            }
+            return "Unable to load incident counts.";
+          })(),
         );
         setLoadingCounts(false);
       });
-
     return () => {
       stale = true;
     };
   }, [loadCounts, tableRefreshToken]);
-
   const handleRefresh = useCallback(() => {
     setBackendStatus("checking");
     setRefreshing(true);
@@ -104,14 +101,18 @@ export default function IncidentManagement() {
     void getHealth()
       .then((health) =>
         setBackendStatus(
-          health.status === "healthy" ? "connected" : "unavailable"
-        )
+          (function resolveDisplay() {
+            if (health.status === "healthy") {
+              return "connected";
+            }
+            return "unavailable";
+          })(),
+        ),
       )
       .catch(() => setBackendStatus("unavailable"))
       .finally(() => setRefreshing(false));
     setTableRefreshToken((value) => value + 1);
   }, []);
-
   async function handleScan() {
     setScanning(true);
     setScanError(null);
@@ -128,13 +129,17 @@ export default function IncidentManagement() {
       }
     } catch (err) {
       setScanError(
-        err instanceof Error ? err.message : "The incident scan failed."
+        (function resolveDisplay() {
+          if (err instanceof Error) {
+            return err.message;
+          }
+          return "The incident scan failed.";
+        })(),
       );
     } finally {
       setScanning(false);
     }
   }
-
   return (
     <div className="flex min-h-screen flex-col">
       <DashboardHeader
@@ -155,40 +160,43 @@ export default function IncidentManagement() {
             Incident Overview
           </h2>
 
-          {loadingCounts ? (
-            <KpiGridSkeleton />
-          ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <StatCard
-                label="Total Incidents"
-                value={formatNumber(counts?.total ?? 0)}
-                hint="All incidents in the store"
-                icon={ShieldCheck}
-                tone="accent"
-              />
-              <StatCard
-                label="Open"
-                value={formatNumber(counts?.open ?? 0)}
-                hint="Awaiting review"
-                icon={AlertTriangle}
-                tone="danger"
-              />
-              <StatCard
-                label="Under Review"
-                value={formatNumber(counts?.under_review ?? 0)}
-                hint="Being investigated"
-                icon={Eye}
-                tone="warning"
-              />
-              <StatCard
-                label="Resolved"
-                value={formatNumber(counts?.resolved ?? 0)}
-                hint="Closed incidents"
-                icon={CheckCircle2}
-                tone="success"
-              />
-            </div>
-          )}
+          {(function resolveDisplay() {
+            if (loadingCounts) {
+              return <KpiGridSkeleton />;
+            }
+            return (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <StatCard
+                  label="Total Incidents"
+                  value={formatNumber(counts?.total ?? 0)}
+                  hint="All incidents in the store"
+                  icon={ShieldCheck}
+                  tone="accent"
+                />
+                <StatCard
+                  label="Open"
+                  value={formatNumber(counts?.open ?? 0)}
+                  hint="Awaiting review"
+                  icon={AlertTriangle}
+                  tone="danger"
+                />
+                <StatCard
+                  label="Under Review"
+                  value={formatNumber(counts?.under_review ?? 0)}
+                  hint="Being investigated"
+                  icon={Eye}
+                  tone="warning"
+                />
+                <StatCard
+                  label="Resolved"
+                  value={formatNumber(counts?.resolved ?? 0)}
+                  hint="Closed incidents"
+                  icon={CheckCircle2}
+                  tone="success"
+                />
+              </div>
+            );
+          })()}
           {countsError && (
             <p className="mt-2 text-xs text-danger">{countsError}</p>
           )}
@@ -240,9 +248,12 @@ export default function IncidentManagement() {
                   onChange={(event) => {
                     const parsed = Number(event.target.value);
                     setScanMax(
-                      Number.isFinite(parsed)
-                        ? Math.min(200, Math.max(1, Math.round(parsed)))
-                        : 1
+                      (function resolveDisplay() {
+                        if (Number.isFinite(parsed)) {
+                          return Math.min(200, Math.max(1, Math.round(parsed)));
+                        }
+                        return 1;
+                      })(),
                     );
                   }}
                   className="w-full rounded-md border border-line bg-surface-raised px-3 py-2 text-xs text-white focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none"
@@ -269,28 +280,41 @@ export default function IncidentManagement() {
                 disabled={scanning}
                 className={cn(
                   "inline-flex items-center gap-1.5 rounded-md border border-accent/40 bg-accent/15 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-accent/25 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none",
-                  scanning && "cursor-not-allowed opacity-60"
+                  scanning && "cursor-not-allowed opacity-60",
                 )}
               >
-                {scanning ? (
-                  <Loader2
-                    className="h-3.5 w-3.5 animate-spin"
-                    aria-hidden="true"
-                  />
-                ) : (
-                  <ScanSearch className="h-3.5 w-3.5" aria-hidden="true" />
-                )}
-                {scanDryRun ? "Preview scan" : "Run scan"}
+                {(function resolveDisplay() {
+                  if (scanning) {
+                    return (
+                      <Loader2
+                        className="h-3.5 w-3.5 animate-spin"
+                        aria-hidden="true"
+                      />
+                    );
+                  }
+                  return (
+                    <ScanSearch className="h-3.5 w-3.5" aria-hidden="true" />
+                  );
+                })()}
+                {(function resolveDisplay() {
+                  if (scanDryRun) {
+                    return "Preview scan";
+                  }
+                  return "Run scan";
+                })()}
               </button>
-              {scanError && (
-                <p className="text-xs text-danger">{scanError}</p>
-              )}
+              {scanError && <p className="text-xs text-danger">{scanError}</p>}
             </div>
 
             {scanResult && (
               <div className="rounded-md border border-line bg-surface-raised p-3 text-xs">
                 <p className="font-medium text-slate-200">
-                  {scanResult.dry_run ? "Preview results" : "Scan results"}
+                  {(function resolveDisplay() {
+                    if (scanResult.dry_run) {
+                      return "Preview results";
+                    }
+                    return "Scan results";
+                  })()}
                 </p>
                 <ul className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-slate-400 sm:grid-cols-3">
                   <li>
@@ -314,7 +338,12 @@ export default function IncidentManagement() {
                 </ul>
                 {scanResult.created_incident_ids.length > 0 && (
                   <p className="mt-2 text-[11px] text-slate-500">
-                    {scanResult.dry_run ? "Would create: " : "Created: "}
+                    {(function resolveDisplay() {
+                      if (scanResult.dry_run) {
+                        return "Would create: ";
+                      }
+                      return "Created: ";
+                    })()}
                     {scanResult.created_incident_ids.join(", ")}
                   </p>
                 )}

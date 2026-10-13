@@ -37,7 +37,7 @@ def _queued_job(investigation_id: str, incident_id: str) -> dict:
         "status": "queued",
         "stage": "queued",
         "provider": "scripted",
-        "model": "gemini-2.5-flash",
+        "model": "gemini-3.8-flash",
         "summary": None,
         "report": None,
         "error": None,
@@ -51,7 +51,7 @@ def _queued_job(investigation_id: str, incident_id: str) -> dict:
     }
 
 
-@pytest.fixture()
+@pytest.fixture
 def investigation_env(tmp_path):
     incident_service = IncidentService(
         SqliteIncidentRepository(Database(tmp_path / "api.db"))
@@ -115,9 +115,9 @@ def test_start_investigation_completes_inline(client, investigation_env, anomaly
 
 def test_report_does_not_expose_ground_truth(client, investigation_env, anomaly_ids):
     incident_id = _create_incident(client, anomaly_ids[1])
-    investigation_id = client.post(
-        f"/api/incidents/{incident_id}/investigate"
-    ).json()["investigation_id"]
+    investigation_id = client.post(f"/api/incidents/{incident_id}/investigate").json()[
+        "investigation_id"
+    ]
 
     report = client.get(f"/api/investigations/{investigation_id}").json()["report"]
     rendered = json.dumps(report).lower()
@@ -155,9 +155,9 @@ def test_duplicate_service_error_direct(investigation_env, anomaly_ids):
 
 def test_list_investigations(client, investigation_env, anomaly_ids):
     incident_id = _create_incident(client, anomaly_ids[4])
-    investigation_id = client.post(
-        f"/api/incidents/{incident_id}/investigate"
-    ).json()["investigation_id"]
+    investigation_id = client.post(f"/api/incidents/{incident_id}/investigate").json()[
+        "investigation_id"
+    ]
 
     listing = client.get(f"/api/incidents/{incident_id}/investigations").json()
     assert listing["total"] == 1
@@ -167,34 +167,31 @@ def test_list_investigations(client, investigation_env, anomaly_ids):
 
 def test_global_investigation_list(client, investigation_env, anomaly_ids):
     first_incident = _create_incident(client, anomaly_ids[0])
-    first_id = client.post(
-        f"/api/incidents/{first_incident}/investigate"
-    ).json()["investigation_id"]
+    first_id = client.post(f"/api/incidents/{first_incident}/investigate").json()[
+        "investigation_id"
+    ]
 
     page = client.get("/api/investigations").json()
     assert page["total"] == 1
     assert page["items"][0]["investigation_id"] == first_id
     assert page["items"][0]["status"] == "completed"
 
-    completed = client.get(
-        "/api/investigations", params={"status": "completed"}
-    ).json()
+    completed = client.get("/api/investigations", params={"status": "completed"}).json()
     assert completed["total"] == 1
 
     queued = client.get("/api/investigations", params={"status": "queued"}).json()
     assert queued["total"] == 0
 
     assert (
-        client.get("/api/investigations", params={"status": "bogus"}).status_code
-        == 422
+        client.get("/api/investigations", params={"status": "bogus"}).status_code == 422
     )
 
 
 def test_evidence_endpoint_returns_catalog(client, investigation_env, anomaly_ids):
     incident_id = _create_incident(client, anomaly_ids[0])
-    investigation_id = client.post(
-        f"/api/incidents/{incident_id}/investigate"
-    ).json()["investigation_id"]
+    investigation_id = client.post(f"/api/incidents/{incident_id}/investigate").json()[
+        "investigation_id"
+    ]
 
     response = client.get(f"/api/investigations/{investigation_id}/evidence")
     assert response.status_code == 200
@@ -209,7 +206,9 @@ def test_evidence_endpoint_returns_catalog(client, investigation_env, anomaly_id
         assert "ground_truth" not in json.dumps(item).lower()
 
 
-def test_disabled_investigation_returns_503(client, investigation_env, anomaly_ids, monkeypatch):
+def test_disabled_investigation_returns_503(
+    client, investigation_env, anomaly_ids, monkeypatch
+):
     incident_id = _create_incident(client, anomaly_ids[1])
     monkeypatch.setattr(
         config,
@@ -219,16 +218,16 @@ def test_disabled_investigation_returns_503(client, investigation_env, anomaly_i
     assert client.post(f"/api/incidents/{incident_id}/investigate").status_code == 503
 
 
-def test_worker_endpoint_requires_secret(client, investigation_env, anomaly_ids, monkeypatch):
+def test_worker_endpoint_requires_secret(
+    client, investigation_env, anomaly_ids, monkeypatch
+):
     incident_id = _create_incident(client, anomaly_ids[2])
 
     monkeypatch.setattr(
         config, "settings", replace(config.settings, worker_secret=None)
     )
     # No secret configured -> endpoint disabled.
-    assert (
-        client.post(f"/api/investigations/INV-ANY/process").status_code == 403
-    )
+    assert client.post(f"/api/investigations/INV-ANY/process").status_code == 403
 
     monkeypatch.setattr(
         config, "settings", replace(config.settings, worker_secret="topsecret")
@@ -239,7 +238,9 @@ def test_worker_endpoint_requires_secret(client, investigation_env, anomaly_ids,
     assert wrong.status_code == 401
 
 
-def test_worker_endpoint_executes_queued_job(client, investigation_env, anomaly_ids, monkeypatch):
+def test_worker_endpoint_executes_queued_job(
+    client, investigation_env, anomaly_ids, monkeypatch
+):
     incident_id = _create_incident(client, anomaly_ids[3])
     investigation_env.repository.insert(_queued_job("INV-PROC", incident_id))
 
@@ -277,9 +278,9 @@ def test_unsupported_citation_is_reported(client, investigation_env, anomaly_ids
     set_scripted_response("investigation_agent", json.dumps(draft))
 
     incident_id = _create_incident(client, anomaly_ids[4])
-    investigation_id = client.post(
-        f"/api/incidents/{incident_id}/investigate"
-    ).json()["investigation_id"]
+    investigation_id = client.post(f"/api/incidents/{incident_id}/investigate").json()[
+        "investigation_id"
+    ]
 
     job = client.get(f"/api/investigations/{investigation_id}").json()
     assert job["status"] == "completed"
@@ -300,9 +301,9 @@ def test_failed_job_is_persisted(client, investigation_env, anomaly_ids, monkeyp
     investigation_env._runtime_factory = _boom
 
     incident_id = _create_incident(client, anomaly_ids[0])
-    investigation_id = client.post(
-        f"/api/incidents/{incident_id}/investigate"
-    ).json()["investigation_id"]
+    investigation_id = client.post(f"/api/incidents/{incident_id}/investigate").json()[
+        "investigation_id"
+    ]
 
     job = client.get(f"/api/investigations/{investigation_id}").json()
     assert job["status"] == "failed"

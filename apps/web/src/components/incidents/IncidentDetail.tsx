@@ -1,5 +1,4 @@
 "use client";
-
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -16,10 +15,7 @@ import StatusBadge from "@/components/ui/StatusBadge";
 import FeatureContributionChart from "@/components/anomalies/FeatureContributionChart";
 import IncidentStatusControl from "@/components/incidents/IncidentStatusControl";
 import IncidentTimeline from "@/components/incidents/IncidentTimeline";
-import {
-  EmptyState,
-  ErrorState,
-} from "@/components/ui/Feedback";
+import { EmptyState, ErrorState } from "@/components/ui/Feedback";
 import {
   INCIDENT_STATUS_LABELS,
   INCIDENT_STATUS_TONE,
@@ -32,27 +28,24 @@ import {
   INVESTIGATION_STATUS_TONE,
 } from "@/lib/investigations";
 import { cn, formatDateTime, formatDecimal } from "@/lib/format";
-
 interface IncidentDetailProps {
   incidentId: string;
 }
-
 function formatMeasurement(value: unknown): string {
   if (typeof value === "number") {
     return formatDecimal(value, 2);
   }
   if (value === null || value === undefined) return "—";
   if (typeof value === "object") return JSON.stringify(value);
-  return String(value);
+  return JSON.stringify(value) ?? "—";
 }
-
 function evidenceRow(feature: FeatureContribution) {
   return (
     <tr
       key={feature.feature}
       className={cn(
         "border-b border-line/60 last:border-b-0",
-        feature.is_anomalous && "bg-danger/5"
+        feature.is_anomalous && "bg-danger/5",
       )}
     >
       <td className="px-3 py-2 text-slate-300">{feature.label}</td>
@@ -66,7 +59,7 @@ function evidenceRow(feature: FeatureContribution) {
       <td
         className={cn(
           "px-3 py-2 text-right font-medium tabular-nums",
-          feature.is_anomalous ? "text-danger" : "text-slate-300"
+          feature.is_anomalous ? "text-danger" : "text-slate-300",
         )}
       >
         {formatDecimal(feature.robust_zscore, 2)}
@@ -77,19 +70,18 @@ function evidenceRow(feature: FeatureContribution) {
     </tr>
   );
 }
-
-export default function IncidentDetail({ incidentId }: IncidentDetailProps) {
+export default function IncidentDetail({
+  incidentId,
+}: Readonly<IncidentDetailProps>) {
   const router = useRouter();
   const [incident, setIncident] = useState<Incident | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
   const [existingInvestigations, setExistingInvestigations] = useState<
     InvestigationListItem[]
   >([]);
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
-
   useEffect(() => {
     let stale = false;
     getIncident(incidentId)
@@ -102,7 +94,7 @@ export default function IncidentDetail({ incidentId }: IncidentDetailProps) {
         if (stale) return;
         setIncident(null);
         setError(
-          err instanceof Error ? err.message : "Unable to load the incident."
+          err instanceof Error ? err.message : "Unable to load the incident.",
         );
         setLoading(false);
       });
@@ -119,7 +111,6 @@ export default function IncidentDetail({ incidentId }: IncidentDetailProps) {
       stale = true;
     };
   }, [incidentId]);
-
   async function handleStartInvestigation() {
     setStarting(true);
     setStartError(null);
@@ -128,13 +119,14 @@ export default function IncidentDetail({ incidentId }: IncidentDetailProps) {
       router.push(`/investigations/${response.investigation_id}`);
     } catch (err) {
       setStartError(
-        err instanceof Error ? err.message : "The AI investigation could not be started."
+        err instanceof Error
+          ? err.message
+          : "The AI investigation could not be started.",
       );
     } finally {
       setStarting(false);
     }
   }
-
   return (
     <div className="flex min-h-screen flex-col">
       <header className="flex flex-col gap-4 border-b border-line bg-surface/40 px-4 py-5 sm:px-6 xl:px-8">
@@ -172,277 +164,316 @@ export default function IncidentDetail({ incidentId }: IncidentDetailProps) {
       </header>
 
       <div className="flex-1 space-y-6 px-4 py-6 sm:px-6 xl:px-8">
-        {loading ? (
-          <div className="space-y-4">
-            <div className="h-28 animate-pulse rounded-lg bg-surface" />
-            <div className="h-64 animate-pulse rounded-lg bg-surface" />
-          </div>
-        ) : error ? (
-          <div className="rounded-lg border border-line bg-surface">
-            <ErrorState
-              title="Incident unavailable"
-              message={error}
-            />
-          </div>
-        ) : incident ? (
-          <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-            <div className="space-y-6 xl:col-span-2">
-              <section className="rounded-lg border border-line bg-surface p-5">
-                <h2 className="text-sm font-semibold text-white">
-                  Incident metadata
-                </h2>
-                <dl className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
-                  <div className="rounded-md border border-line bg-surface-raised px-3 py-2">
-                    <dt className="text-[11px] text-slate-500">Record ID</dt>
-                    <dd className="mt-0.5 font-medium text-white tabular-nums">
-                      {incident.record_id}
-                    </dd>
-                  </div>
-                  <div className="rounded-md border border-line bg-surface-raised px-3 py-2">
-                    <dt className="text-[11px] text-slate-500">Product ID</dt>
-                    <dd className="mt-0.5 font-medium text-white">
-                      {incident.product_id}
-                    </dd>
-                  </div>
-                  <div className="rounded-md border border-line bg-surface-raised px-3 py-2">
-                    <dt className="text-[11px] text-slate-500">Machine type</dt>
-                    <dd className="mt-0.5 font-medium text-white">
-                      {incident.machine_type}
-                    </dd>
-                  </div>
-                  <div className="rounded-md border border-line bg-surface-raised px-3 py-2">
-                    <dt className="text-[11px] text-slate-500">Algorithm</dt>
-                    <dd className="mt-0.5 font-mono text-xs text-cyan-accent">
-                      {incident.algorithm}
-                    </dd>
-                  </div>
-                  <div className="rounded-md border border-line bg-surface-raised px-3 py-2">
-                    <dt className="text-[11px] text-slate-500">Created</dt>
-                    <dd className="mt-0.5 text-xs text-white">
-                      {formatDateTime(incident.created_at)}
-                    </dd>
-                  </div>
-                  <div className="rounded-md border border-line bg-surface-raised px-3 py-2">
-                    <dt className="text-[11px] text-slate-500">Last updated</dt>
-                    <dd className="mt-0.5 text-xs text-white">
-                      {formatDateTime(incident.updated_at)}
-                    </dd>
-                  </div>
-                </dl>
-                {incident.note && (
-                  <p className="mt-3 rounded-md border border-line bg-surface-raised px-3 py-2 text-xs leading-relaxed text-slate-300">
-                    {incident.note}
-                  </p>
-                )}
-              </section>
-
-              <section className="rounded-lg border border-line bg-surface p-5">
-                <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <h2 className="text-sm font-semibold text-white">
-                    Anomaly evidence
-                  </h2>
-                  <p className="text-xs text-slate-400">
-                    Anomaly score{" "}
-                    <span className="font-medium text-white tabular-nums">
-                      {formatDecimal(incident.anomaly_score, 2)}
-                    </span>
-                  </p>
+        {(function resolveDisplay() {
+          if (loading) {
+            return (
+              <div className="space-y-4">
+                <div className="h-28 animate-pulse rounded-lg bg-surface" />
+                <div className="h-64 animate-pulse rounded-lg bg-surface" />
+              </div>
+            );
+          }
+          return (function resolveDisplay() {
+            if (error) {
+              return (
+                <div className="rounded-lg border border-line bg-surface">
+                  <ErrorState title="Incident unavailable" message={error} />
                 </div>
-                <div className="mt-4 overflow-x-auto rounded-md border border-line">
-                  <table className="w-full min-w-[620px] text-left text-xs">
-                    <caption className="sr-only">
-                      Feature-level evidence for this incident
-                    </caption>
-                    <thead>
-                      <tr className="border-b border-line text-[11px] tracking-[0.1em] text-slate-500 uppercase">
-                        <th scope="col" className="px-3 py-2 font-medium">
-                          Feature
-                        </th>
-                        <th scope="col" className="px-3 py-2 text-right font-medium">
-                          Observed
-                        </th>
-                        <th scope="col" className="px-3 py-2 text-right font-medium">
-                          Baseline median
-                        </th>
-                        <th scope="col" className="px-3 py-2 text-right font-medium">
-                          z-score
-                        </th>
-                        <th scope="col" className="px-3 py-2 text-right font-medium">
-                          Direction
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>{incident.evidence.map(evidenceRow)}</tbody>
-                  </table>
-                </div>
-
-                {incident.evidence.length > 0 && incident.detection_config && (
-                  <div className="mt-4">
-                    <FeatureContributionChart
-                      features={incident.evidence}
-                      featureZThreshold={incident.detection_config.feature_z_threshold}
-                    />
-                  </div>
-                )}
-
-                {incident.explanations.length > 0 && (
-                  <ul className="mt-4 space-y-2">
-                    {incident.explanations.map((explanation, index) => (
-                      <li
-                        key={index}
-                        className="rounded-md border border-line bg-surface-raised px-3 py-2 text-xs leading-relaxed text-slate-300"
-                      >
-                        {explanation}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </section>
-
-              <section className="rounded-lg border border-line bg-surface p-5">
-                <h2 className="text-sm font-semibold text-white">
-                  Source observation
-                </h2>
-                <p className="mt-1 text-xs text-slate-400">
-                  Sensor values for the dataset observation that triggered this
-                  incident.
-                </p>
-                <dl className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
-                  {Object.entries(incident.source_measurements).map(
-                    ([key, value]) => (
-                      <div
-                        key={key}
-                        className="flex flex-col gap-0.5 rounded-md border border-line bg-surface-raised px-3 py-2"
-                      >
+              );
+            }
+            return incident ? (
+              <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+                <div className="space-y-6 xl:col-span-2">
+                  <section className="rounded-lg border border-line bg-surface p-5">
+                    <h2 className="text-sm font-semibold text-white">
+                      Incident metadata
+                    </h2>
+                    <dl className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
+                      <div className="rounded-md border border-line bg-surface-raised px-3 py-2">
                         <dt className="text-[11px] text-slate-500">
-                          {featureLabel(key)}
+                          Record ID
                         </dt>
-                        <dd className="font-medium text-white tabular-nums">
-                          {formatMeasurement(value)}
+                        <dd className="mt-0.5 font-medium text-white tabular-nums">
+                          {incident.record_id}
                         </dd>
                       </div>
-                    )
-                  )}
-                </dl>
-              </section>
+                      <div className="rounded-md border border-line bg-surface-raised px-3 py-2">
+                        <dt className="text-[11px] text-slate-500">
+                          Product ID
+                        </dt>
+                        <dd className="mt-0.5 font-medium text-white">
+                          {incident.product_id}
+                        </dd>
+                      </div>
+                      <div className="rounded-md border border-line bg-surface-raised px-3 py-2">
+                        <dt className="text-[11px] text-slate-500">
+                          Machine type
+                        </dt>
+                        <dd className="mt-0.5 font-medium text-white">
+                          {incident.machine_type}
+                        </dd>
+                      </div>
+                      <div className="rounded-md border border-line bg-surface-raised px-3 py-2">
+                        <dt className="text-[11px] text-slate-500">
+                          Algorithm
+                        </dt>
+                        <dd className="mt-0.5 font-mono text-xs text-cyan-accent">
+                          {incident.algorithm}
+                        </dd>
+                      </div>
+                      <div className="rounded-md border border-line bg-surface-raised px-3 py-2">
+                        <dt className="text-[11px] text-slate-500">Created</dt>
+                        <dd className="mt-0.5 text-xs text-white">
+                          {formatDateTime(incident.created_at)}
+                        </dd>
+                      </div>
+                      <div className="rounded-md border border-line bg-surface-raised px-3 py-2">
+                        <dt className="text-[11px] text-slate-500">
+                          Last updated
+                        </dt>
+                        <dd className="mt-0.5 text-xs text-white">
+                          {formatDateTime(incident.updated_at)}
+                        </dd>
+                      </div>
+                    </dl>
+                    {incident.note && (
+                      <p className="mt-3 rounded-md border border-line bg-surface-raised px-3 py-2 text-xs leading-relaxed text-slate-300">
+                        {incident.note}
+                      </p>
+                    )}
+                  </section>
 
-              <section className="rounded-lg border border-line bg-surface p-5">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="flex items-center gap-2 text-sm font-medium text-slate-200">
-                      <BrainCircuit
-                        className="h-4 w-4 text-cyan-accent"
-                        aria-hidden="true"
-                      />
-                      Investigate with AI
-                    </p>
-                    <p className="mt-1 max-w-xl text-xs text-slate-400">
-                      Runs a Gemini-powered, evidence-based root-cause
-                      investigation using the saved incident and prior incidents.
-                      Findings are hypotheses for review, not confirmed faults.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleStartInvestigation}
-                    disabled={starting}
-                    className={cn(
-                      "shrink-0 inline-flex items-center gap-1.5 rounded-md border border-accent/40 bg-accent/15 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-accent/25 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none",
-                      starting && "cursor-not-allowed opacity-60"
+                  <section className="rounded-lg border border-line bg-surface p-5">
+                    <div className="flex flex-wrap items-baseline justify-between gap-2">
+                      <h2 className="text-sm font-semibold text-white">
+                        Anomaly evidence
+                      </h2>
+                      <p className="text-xs text-slate-400">
+                        Anomaly score{" "}
+                        <span className="font-medium text-white tabular-nums">
+                          {formatDecimal(incident.anomaly_score, 2)}
+                        </span>
+                      </p>
+                    </div>
+                    <div className="mt-4 overflow-x-auto rounded-md border border-line">
+                      <table className="w-full min-w-[620px] text-left text-xs">
+                        <caption className="sr-only">
+                          Feature-level evidence for this incident
+                        </caption>
+                        <thead>
+                          <tr className="border-b border-line text-[11px] tracking-[0.1em] text-slate-500 uppercase">
+                            <th scope="col" className="px-3 py-2 font-medium">
+                              Feature
+                            </th>
+                            <th
+                              scope="col"
+                              className="px-3 py-2 text-right font-medium"
+                            >
+                              Observed
+                            </th>
+                            <th
+                              scope="col"
+                              className="px-3 py-2 text-right font-medium"
+                            >
+                              Baseline median
+                            </th>
+                            <th
+                              scope="col"
+                              className="px-3 py-2 text-right font-medium"
+                            >
+                              z-score
+                            </th>
+                            <th
+                              scope="col"
+                              className="px-3 py-2 text-right font-medium"
+                            >
+                              Direction
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>{incident.evidence.map(evidenceRow)}</tbody>
+                      </table>
+                    </div>
+
+                    {incident.evidence.length > 0 &&
+                      incident.detection_config && (
+                        <div className="mt-4">
+                          <FeatureContributionChart
+                            features={incident.evidence}
+                            featureZThreshold={
+                              incident.detection_config.feature_z_threshold
+                            }
+                          />
+                        </div>
+                      )}
+
+                    {incident.explanations.length > 0 && (
+                      <ul className="mt-4 space-y-2">
+                        {incident.explanations.map((explanation) => (
+                          <li
+                            key={explanation}
+                            className="rounded-md border border-line bg-surface-raised px-3 py-2 text-xs leading-relaxed text-slate-300"
+                          >
+                            {explanation}
+                          </li>
+                        ))}
+                      </ul>
                     )}
-                  >
-                    {starting ? (
-                      <Loader2
-                        className="h-3.5 w-3.5 animate-spin"
-                        aria-hidden="true"
-                      />
-                    ) : (
-                      <BrainCircuit
-                        className="h-3.5 w-3.5"
-                        aria-hidden="true"
-                      />
+                  </section>
+
+                  <section className="rounded-lg border border-line bg-surface p-5">
+                    <h2 className="text-sm font-semibold text-white">
+                      Source observation
+                    </h2>
+                    <p className="mt-1 text-xs text-slate-400">
+                      Sensor values for the dataset observation that triggered
+                      this incident.
+                    </p>
+                    <dl className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
+                      {Object.entries(incident.source_measurements).map(
+                        ([key, value]) => (
+                          <div
+                            key={key}
+                            className="flex flex-col gap-0.5 rounded-md border border-line bg-surface-raised px-3 py-2"
+                          >
+                            <dt className="text-[11px] text-slate-500">
+                              {featureLabel(key)}
+                            </dt>
+                            <dd className="font-medium text-white tabular-nums">
+                              {formatMeasurement(value)}
+                            </dd>
+                          </div>
+                        ),
+                      )}
+                    </dl>
+                  </section>
+
+                  <section className="rounded-lg border border-line bg-surface p-5">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <p className="flex items-center gap-2 text-sm font-medium text-slate-200">
+                          <BrainCircuit
+                            className="h-4 w-4 text-cyan-accent"
+                            aria-hidden="true"
+                          />
+                          Investigate with AI
+                        </p>
+                        <p className="mt-1 max-w-xl text-xs text-slate-400">
+                          Runs a Gemini-powered, evidence-based root-cause
+                          investigation using the saved incident and prior
+                          incidents. Findings are hypotheses for review, not
+                          confirmed faults.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleStartInvestigation}
+                        disabled={starting}
+                        className={cn(
+                          "shrink-0 inline-flex items-center gap-1.5 rounded-md border border-accent/40 bg-accent/15 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-accent/25 focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none",
+                          starting && "cursor-not-allowed opacity-60",
+                        )}
+                      >
+                        {starting ? (
+                          <Loader2
+                            className="h-3.5 w-3.5 animate-spin"
+                            aria-hidden="true"
+                          />
+                        ) : (
+                          <BrainCircuit
+                            className="h-3.5 w-3.5"
+                            aria-hidden="true"
+                          />
+                        )}
+                        {starting ? "Starting…" : "Investigate with AI"}
+                      </button>
+                    </div>
+
+                    {startError && (
+                      <p className="mt-3 rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">
+                        {startError}
+                      </p>
                     )}
-                    {starting ? "Starting…" : "Investigate with AI"}
-                  </button>
+
+                    {existingInvestigations.length > 0 && (
+                      <div className="mt-4 border-t border-line pt-4">
+                        <p className="text-[11px] font-medium tracking-wide text-slate-500 uppercase">
+                          Previous investigations
+                        </p>
+                        <ul className="mt-2 space-y-1.5">
+                          {existingInvestigations.map((investigation) => (
+                            <li
+                              key={investigation.investigation_id}
+                              className="flex items-center justify-between gap-3 rounded-md border border-line bg-surface-raised px-3 py-2"
+                            >
+                              <div className="min-w-0">
+                                <Link
+                                  href={`/investigations/${investigation.investigation_id}`}
+                                  className="font-mono text-[11px] text-cyan-accent underline-offset-2 hover:underline"
+                                >
+                                  {investigation.investigation_id}
+                                </Link>
+                                <p className="mt-0.5 text-[11px] text-slate-500">
+                                  {formatDateTime(investigation.created_at)}
+                                </p>
+                              </div>
+                              <div className="flex shrink-0 items-center gap-2">
+                                <StatusBadge
+                                  label={
+                                    INVESTIGATION_STATUS_LABELS[
+                                      investigation.status
+                                    ]
+                                  }
+                                  tone={
+                                    INVESTIGATION_STATUS_TONE[
+                                      investigation.status
+                                    ]
+                                  }
+                                  dot
+                                />
+                                <Link
+                                  href={`/investigations/${investigation.investigation_id}`}
+                                  aria-label={`Open ${investigation.investigation_id}`}
+                                  className="text-slate-400 transition-colors hover:text-slate-200"
+                                >
+                                  <ExternalLink
+                                    className="h-3.5 w-3.5"
+                                    aria-hidden="true"
+                                  />
+                                </Link>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </section>
                 </div>
 
-                {startError && (
-                  <p className="mt-3 rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">
-                    {startError}
-                  </p>
-                )}
+                <div className="space-y-6">
+                  <IncidentStatusControl
+                    incident={incident}
+                    onUpdated={setIncident}
+                  />
 
-                {existingInvestigations.length > 0 && (
-                  <div className="mt-4 border-t border-line pt-4">
-                    <p className="text-[11px] font-medium tracking-wide text-slate-500 uppercase">
-                      Previous investigations
-                    </p>
-                    <ul className="mt-2 space-y-1.5">
-                      {existingInvestigations.map((investigation) => (
-                        <li
-                          key={investigation.investigation_id}
-                          className="flex items-center justify-between gap-3 rounded-md border border-line bg-surface-raised px-3 py-2"
-                        >
-                          <div className="min-w-0">
-                            <Link
-                              href={`/investigations/${investigation.investigation_id}`}
-                              className="font-mono text-[11px] text-cyan-accent underline-offset-2 hover:underline"
-                            >
-                              {investigation.investigation_id}
-                            </Link>
-                            <p className="mt-0.5 text-[11px] text-slate-500">
-                              {formatDateTime(investigation.created_at)}
-                            </p>
-                          </div>
-                          <div className="flex shrink-0 items-center gap-2">
-                            <StatusBadge
-                              label={
-                                INVESTIGATION_STATUS_LABELS[investigation.status]
-                              }
-                              tone={INVESTIGATION_STATUS_TONE[investigation.status]}
-                              dot
-                            />
-                            <Link
-                              href={`/investigations/${investigation.investigation_id}`}
-                              aria-label={`Open ${investigation.investigation_id}`}
-                              className="text-slate-400 transition-colors hover:text-slate-200"
-                            >
-                              <ExternalLink
-                                className="h-3.5 w-3.5"
-                                aria-hidden="true"
-                              />
-                            </Link>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </section>
-            </div>
-
-            <div className="space-y-6">
-              <IncidentStatusControl
-                incident={incident}
-                onUpdated={setIncident}
+                  <section className="rounded-lg border border-line bg-surface p-5">
+                    <h2 className="text-sm font-semibold text-white">
+                      Status history
+                    </h2>
+                    <div className="mt-4">
+                      <IncidentTimeline entries={incident.timeline} />
+                    </div>
+                  </section>
+                </div>
+              </div>
+            ) : (
+              <EmptyState
+                title="Incident not found"
+                description="The requested incident could not be found in the incident store."
               />
-
-              <section className="rounded-lg border border-line bg-surface p-5">
-                <h2 className="text-sm font-semibold text-white">
-                  Status history
-                </h2>
-                <div className="mt-4">
-                  <IncidentTimeline entries={incident.timeline} />
-                </div>
-              </section>
-            </div>
-          </div>
-        ) : (
-          <EmptyState
-            title="Incident not found"
-            description="The requested incident could not be found in the incident store."
-          />
-        )}
+            );
+          })();
+        })()}
       </div>
     </div>
   );

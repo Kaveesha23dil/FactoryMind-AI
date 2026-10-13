@@ -1,5 +1,4 @@
 "use client";
-
 import {
   Bar,
   BarChart,
@@ -12,22 +11,20 @@ import {
   YAxis,
 } from "recharts";
 import type { FeatureContribution } from "@/types/anomaly";
-
 interface FeatureContributionChartProps {
   features: FeatureContribution[];
   featureZThreshold: number;
 }
-
 export default function FeatureContributionChart({
   features,
   featureZThreshold,
-}: FeatureContributionChartProps) {
+}: Readonly<FeatureContributionChartProps>) {
   const data = features.map((feature) => ({
+    feature: feature.feature,
     name: feature.label,
     zscore: feature.robust_zscore,
     isAnomalous: feature.is_anomalous,
   }));
-
   return (
     <div className="h-72 w-full">
       <ResponsiveContainer width="100%" height="100%">
@@ -36,7 +33,11 @@ export default function FeatureContributionChart({
           data={data}
           margin={{ top: 8, right: 24, bottom: 8, left: 8 }}
         >
-          <CartesianGrid stroke="#1E2A43" strokeDasharray="3 3" horizontal={false} />
+          <CartesianGrid
+            stroke="#1E2A43"
+            strokeDasharray="3 3"
+            horizontal={false}
+          />
           <XAxis
             type="number"
             tick={{ fontSize: 11, fill: "#94A3B8" }}
@@ -70,13 +71,21 @@ export default function FeatureContributionChart({
             labelStyle={{ color: "#94A3B8" }}
             formatter={(value) => [Number(value).toFixed(2), "z-score"]}
           />
-          <ReferenceLine x={featureZThreshold} stroke="#F59E0B" strokeDasharray="4 4" />
-          <ReferenceLine x={-featureZThreshold} stroke="#F59E0B" strokeDasharray="4 4" />
+          <ReferenceLine
+            x={featureZThreshold}
+            stroke="#F59E0B"
+            strokeDasharray="4 4"
+          />
+          <ReferenceLine
+            x={-featureZThreshold}
+            stroke="#F59E0B"
+            strokeDasharray="4 4"
+          />
           <ReferenceLine x={0} stroke="#334155" />
           <Bar dataKey="zscore" radius={[0, 3, 3, 0]} isAnimationActive={false}>
-            {data.map((entry, index) => (
+            {data.map((entry) => (
               <Cell
-                key={index}
+                key={entry.feature}
                 fill={entry.isAnomalous ? "#EF4444" : "#38BDF8"}
               />
             ))}

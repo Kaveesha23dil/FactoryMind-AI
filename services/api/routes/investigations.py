@@ -42,6 +42,11 @@ def get_service() -> InvestigationService:
     "/api/incidents/{incident_id}/investigate",
     response_model=InvestigationStartResponse,
     status_code=202,
+    responses={
+        404: {"description": "Resource not found"},
+        409: {"description": "Conflict"},
+        503: {"description": "Investigation unavailable"},
+    },
 )
 def start_investigation(incident_id: str):
     try:
@@ -74,18 +79,15 @@ def start_investigation(incident_id: str):
 def list_all_investigations(
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
-    status: Literal["queued", "running", "completed", "failed"] | None = Query(
-        None
-    ),
+    status: Literal["queued", "running", "completed", "failed"] | None = Query(None),
 ):
-    return get_service().list_investigations(
-        limit=limit, offset=offset, status=status
-    )
+    return get_service().list_investigations(limit=limit, offset=offset, status=status)
 
 
 @router.get(
     "/api/investigations/{investigation_id}",
     response_model=InvestigationJob,
+    responses={404: {"description": "Resource not found"}},
 )
 def get_investigation(investigation_id: str):
     try:
@@ -109,6 +111,7 @@ def list_investigations(
 @router.get(
     "/api/investigations/{investigation_id}/evidence",
     response_model=EvidenceListResponse,
+    responses={404: {"description": "Resource not found"}},
 )
 def get_evidence(investigation_id: str):
     try:
@@ -120,6 +123,11 @@ def get_evidence(investigation_id: str):
 @router.post(
     "/api/investigations/{investigation_id}/process",
     response_model=InvestigationRunResponse,
+    responses={
+        401: {"description": "Unauthorized"},
+        403: {"description": "Forbidden"},
+        404: {"description": "Resource not found"},
+    },
 )
 def process_investigation(
     investigation_id: str,

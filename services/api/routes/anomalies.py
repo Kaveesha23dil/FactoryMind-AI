@@ -38,7 +38,11 @@ def anomalies_evaluation():
     return get_evaluation_service().report()
 
 
-@router.get("", response_model=AnomalyListResponse)
+@router.get(
+    "",
+    response_model=AnomalyListResponse,
+    responses={422: {"description": "Validation error"}},
+)
 def list_anomalies(
     limit: int = Query(20, ge=1, le=200),
     offset: int = Query(0, ge=0),
@@ -49,9 +53,13 @@ def list_anomalies(
     if severity and severity not in config.SEVERITY_ORDER:
         raise HTTPException(status_code=422, detail=f"Unknown severity '{severity}'")
     if min_severity and min_severity not in config.SEVERITY_ORDER:
-        raise HTTPException(status_code=422, detail=f"Unknown severity '{min_severity}'")
+        raise HTTPException(
+            status_code=422, detail=f"Unknown severity '{min_severity}'"
+        )
     if machine_type and machine_type.upper() not in config.MACHINE_TYPES:
-        raise HTTPException(status_code=422, detail=f"Unknown machine type '{machine_type}'")
+        raise HTTPException(
+            status_code=422, detail=f"Unknown machine type '{machine_type}'"
+        )
 
     result = get_engine().list(
         limit=limit,
@@ -64,7 +72,11 @@ def list_anomalies(
     return result
 
 
-@router.get("/{record_id}", response_model=AnomalyDetail)
+@router.get(
+    "/{record_id}",
+    response_model=AnomalyDetail,
+    responses={404: {"description": "Resource not found"}},
+)
 def get_anomaly(record_id: int):
     stored = get_engine().get(record_id)
     if stored is None:

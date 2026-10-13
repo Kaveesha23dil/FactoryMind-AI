@@ -1,22 +1,18 @@
 import type { IncidentTimelineEntry } from "@/types/incident";
 import StatusBadge from "@/components/ui/StatusBadge";
-import {
-  INCIDENT_STATUS_LABELS,
-  INCIDENT_STATUS_TONE,
-} from "@/lib/severity";
+import { INCIDENT_STATUS_LABELS, INCIDENT_STATUS_TONE } from "@/lib/severity";
 import { formatDateTime } from "@/lib/format";
-
 interface IncidentTimelineProps {
   entries: IncidentTimelineEntry[];
 }
-
-export default function IncidentTimeline({ entries }: IncidentTimelineProps) {
+export default function IncidentTimeline({
+  entries,
+}: Readonly<IncidentTimelineProps>) {
   if (entries.length === 0) {
     return (
       <p className="text-xs text-slate-500">No status history recorded yet.</p>
     );
   }
-
   return (
     <ol className="relative space-y-4 border-l border-line pl-5">
       {entries.map((entry, index) => (

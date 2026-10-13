@@ -129,7 +129,11 @@ def _revision_feedback(critic: dict[str, Any], rejected: list[str]) -> str:
             "- invalid evidence IDs that must be removed or replaced: "
             + ", ".join(sorted(set(rejected)))
         )
-    return "\n".join(parts) if parts else "- Strengthen evidence linkage and remove unsupported claims."
+    return (
+        "\n".join(parts)
+        if parts
+        else "- Strengthen evidence linkage and remove unsupported claims."
+    )
 
 
 class Orchestrator:
@@ -161,7 +165,9 @@ class Orchestrator:
 
     # -- agent execution -------------------------------------------------
 
-    async def _run_agent(self, spec: AgentSpec, context: dict[str, Any]) -> dict[str, Any]:
+    async def _run_agent(
+        self, spec: AgentSpec, context: dict[str, Any]
+    ) -> dict[str, Any]:
         prompt = spec.build_prompt(context)
         attempts = self.max_retries + 1
         last_error: Exception | None = None
@@ -181,7 +187,7 @@ class Orchestrator:
                     exc,
                 )
                 if attempt < attempts - 1:
-                    await asyncio.sleep(min(2 ** attempt, 4))
+                    await asyncio.sleep(min(2**attempt, 4))
             except Exception as exc:  # validation / unexpected
                 last_error = exc
                 logger.warning("Agent %s validation error: %s", spec.name, exc)
@@ -250,7 +256,9 @@ class Orchestrator:
             "sensor_agent",
             "completed",
             summary=sensor_analysis.get("summary"),
-            evidence_count=len(sensor_analysis.get("referenced_evidence_ids", []) or []),
+            evidence_count=len(
+                sensor_analysis.get("referenced_evidence_ids", []) or []
+            ),
         )
 
         reporter.stage("retrieving_knowledge", "Running Knowledge Retrieval Agent")
@@ -260,10 +268,14 @@ class Orchestrator:
             "knowledge_agent",
             "completed",
             summary=knowledge_analysis.get("summary"),
-            evidence_count=len(knowledge_analysis.get("referenced_evidence_ids", []) or []),
+            evidence_count=len(
+                knowledge_analysis.get("referenced_evidence_ids", []) or []
+            ),
         )
 
-        reporter.stage("generating_hypotheses", "Running Root Cause Investigation Agent")
+        reporter.stage(
+            "generating_hypotheses", "Running Root Cause Investigation Agent"
+        )
         reporter.agent("investigation_agent", "running")
         inv_context = {
             **base_context,
@@ -289,7 +301,7 @@ class Orchestrator:
         if needs_revision and revision_count < MAX_REVISIONS:
             revision_count += 1
             feedback = _revision_feedback(critic_output, rejected)
-            logger.info("Running bounded revision for %s", investigation_id)
+            logger.info("Running bounded revision")
             revised_context = {**inv_context, "revision_feedback": feedback}
             draft = await self._run_agent(investigation_agent.SPEC, revised_context)
             hypotheses, rejected = self._normalize_hypotheses(draft, catalog)
@@ -387,6 +399,28 @@ class Orchestrator:
         )
         return actions[:MAX_RECOMMENDED_ACTIONS]
 
+    @staticmethod
+    def _check_excluded_citations(draft, counterfactual, deterministic_findings):
+        excluded_evidence_reused: list[str] = []
+        if counterfactual:
+            excluded_ids = set(counterfactual.get("excluded_evidence_ids", []) or [])
+            raw_cited: set[str] = set()
+            for item in draft.get("hypotheses", []) or []:
+                raw_cited.update(item.get("supporting_evidence_ids", []) or [])
+                raw_cited.update(item.get("contradicting_evidence_ids", []) or [])
+            excluded_evidence_reused = sorted(excluded_ids & raw_cited)
+            if excluded_evidence_reused:
+                deterministic_findings.append(
+                    "Excluded evidence was reused in the draft and removed: "
+                    + ", ".join(excluded_evidence_reused)
+                )
+            else:
+                deterministic_findings.append(
+                    "Deterministic check: no excluded evidence was reused in the "
+                    "revised reasoning."
+                )
+        return excluded_evidence_reused
+
     def _build_report(
         self,
         investigation_id: str,
@@ -407,24 +441,9 @@ class Orchestrator:
                 + ", ".join(rejected_unique)
             )
 
-        excluded_evidence_reused: list[str] = []
-        if counterfactual:
-            excluded_ids = set(counterfactual.get("excluded_evidence_ids", []) or [])
-            raw_cited: set[str] = set()
-            for item in draft.get("hypotheses", []) or []:
-                raw_cited.update(item.get("supporting_evidence_ids", []) or [])
-                raw_cited.update(item.get("contradicting_evidence_ids", []) or [])
-            excluded_evidence_reused = sorted(excluded_ids & raw_cited)
-            if excluded_evidence_reused:
-                deterministic_findings.append(
-                    "Excluded evidence was reused in the draft and removed: "
-                    + ", ".join(excluded_evidence_reused)
-                )
-            else:
-                deterministic_findings.append(
-                    "Deterministic check: no excluded evidence was reused in the "
-                    "revised reasoning."
-                )
+        excluded_evidence_reused = self._check_excluded_citations(
+            draft, counterfactual, deterministic_findings
+        )
 
         critic_review = CriticReview(
             verification_outcome=critic_output.get("verification_outcome")

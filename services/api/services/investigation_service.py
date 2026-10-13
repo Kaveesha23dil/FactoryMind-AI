@@ -56,7 +56,9 @@ def _utcnow_iso() -> str:
 class _RepositoryReporter:
     """Progress reporter that persists stage/agent progress for the frontend."""
 
-    def __init__(self, repository: InvestigationRepository, investigation_id: str) -> None:
+    def __init__(
+        self, repository: InvestigationRepository, investigation_id: str
+    ) -> None:
         self.repository = repository
         self.investigation_id = investigation_id
 
@@ -136,7 +138,7 @@ class InvestigationService:
 
         investigation_id = job["investigation_id"]
         if config.settings.investigation_async:
-            self.enqueue(investigation_id)
+            self.enqueue()
         else:
             # Synchronous mode (local/dev + tests): execute immediately so the
             # caller observes a terminal state without a background thread.
@@ -221,9 +223,9 @@ class InvestigationService:
                 report=report,
                 completed_at=_utcnow_iso(),
             )
-            logger.info("Investigation %s completed", investigation_id)
+            logger.info("Investigation completed")
         except Exception as exc:  # noqa: BLE001 - surface any failure to the client
-            logger.exception("Investigation %s failed", investigation_id)
+            logger.exception("Investigation failed")
             self.repository.append_stage(
                 investigation_id,
                 {"stage": "failed", "message": str(exc), "timestamp": _utcnow_iso()},
@@ -306,7 +308,7 @@ class InvestigationService:
 
     # -- worker ----------------------------------------------------------
 
-    def enqueue(self, investigation_id: str) -> None:
+    def enqueue(self) -> None:
         if self._worker is None:
             self._worker = InvestigationWorker(self)
             self._worker.start()

@@ -1,5 +1,4 @@
 "use client";
-
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
@@ -23,11 +22,7 @@ import type {
 } from "@/types/counterfactual";
 import type { EvidenceListResponse } from "@/types/investigation";
 import StatusBadge from "@/components/ui/StatusBadge";
-import {
-  CardSkeleton,
-  EmptyState,
-  ErrorState,
-} from "@/components/ui/Feedback";
+import { CardSkeleton, EmptyState, ErrorState } from "@/components/ui/Feedback";
 import {
   COUNTERFACTUAL_STATUS_LABELS,
   COUNTERFACTUAL_STATUS_TONE,
@@ -35,42 +30,36 @@ import {
   EXCLUDABLE_EVIDENCE_TYPES,
 } from "@/lib/investigations";
 import { cn, formatDateTime } from "@/lib/format";
-
 const POLL_INTERVAL_MS = 2500;
-
+type MetricValue = number | string | null;
 interface CounterfactualPanelProps {
   investigationId: string;
   evidence: EvidenceListResponse | null;
 }
-
 export default function CounterfactualPanel({
   investigationId,
   evidence,
-}: CounterfactualPanelProps) {
+}: Readonly<CounterfactualPanelProps>) {
   const [list, setList] = useState<CounterfactualListResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
   const [selected, setSelected] = useState<CounterfactualScenario | null>(null);
-
   const [excludedIds, setExcludedIds] = useState<Set<string>>(new Set());
   const [rationale, setRationale] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-
   const excludable = useMemo(
     () =>
       (evidence?.items ?? []).filter((item) =>
-        EXCLUDABLE_EVIDENCE_TYPES.includes(item.evidence_type)
+        EXCLUDABLE_EVIDENCE_TYPES.includes(item.evidence_type),
       ),
-    [evidence]
+    [evidence],
   );
-
   useEffect(() => {
     let stale = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
-
-    (async () => {
+    void (async () => {
       try {
         const next = await getInvestigationCounterfactuals(investigationId);
         if (stale) return;
@@ -79,28 +68,33 @@ export default function CounterfactualPanel({
         setLoading(false);
         setSelected((current) => {
           if (!current) return current;
-          return next.items.find((item) => item.scenario_id === current.scenario_id) ?? current;
+          return (
+            next.items.find(
+              (item) => item.scenario_id === current.scenario_id,
+            ) ?? current
+          );
         });
         if (next.items.some((item) => item.status === "running")) {
-          timer = setTimeout(() => setTick((value) => value + 1), POLL_INTERVAL_MS);
+          timer = setTimeout(
+            () => setTick((value) => value + 1),
+            POLL_INTERVAL_MS,
+          );
         }
       } catch (err) {
         if (stale) return;
         setLoadError(
           err instanceof Error
             ? err.message
-            : "Unexpected error while loading counterfactual scenarios."
+            : "Unexpected error while loading counterfactual scenarios.",
         );
         setLoading(false);
       }
     })();
-
     return () => {
       stale = true;
       if (timer) clearTimeout(timer);
     };
   }, [investigationId, tick]);
-
   const toggle = useCallback((evidenceId: string) => {
     setExcludedIds((current) => {
       const next = new Set(current);
@@ -109,7 +103,6 @@ export default function CounterfactualPanel({
       return next;
     });
   }, []);
-
   const submit = async () => {
     if (excludedIds.size === 0) return;
     setSubmitting(true);
@@ -118,7 +111,7 @@ export default function CounterfactualPanel({
       const created = await createCounterfactual(
         investigationId,
         [...excludedIds],
-        rationale.trim() || null
+        rationale.trim() || null,
       );
       setSelected(created);
       setExcludedIds(new Set());
@@ -126,26 +119,33 @@ export default function CounterfactualPanel({
       setTick((value) => value + 1);
     } catch (err) {
       setSubmitError(
-        err instanceof Error ? err.message : "The scenario could not be created."
+        err instanceof Error
+          ? err.message
+          : "The scenario could not be created.",
       );
     } finally {
       setSubmitting(false);
     }
   };
-
-  const canSubmit = excludedIds.size > 0 && !submitting && excludable.length > 0;
-
+  const canSubmit =
+    excludedIds.size > 0 && !submitting && excludable.length > 0;
   return (
     <div className="space-y-6">
       <section className="rounded-lg border border-line bg-surface px-5 py-4">
         <div className="flex items-start gap-3">
-          <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-cyan-accent" aria-hidden="true" />
+          <Sparkles
+            className="mt-0.5 h-4 w-4 shrink-0 text-cyan-accent"
+            aria-hidden="true"
+          />
           <div>
-            <h2 className="text-sm font-semibold text-white">Counterfactual investigation</h2>
+            <h2 className="text-sm font-semibold text-white">
+              Counterfactual investigation
+            </h2>
             <p className="mt-1 max-w-3xl text-xs leading-relaxed text-slate-400">
-              Remove selected evidence and re-run the full multi-agent pipeline against a
-              restricted context. The original investigation is never modified. The revised
-              anomaly score is a deterministic recomputation, not a model estimate.
+              Remove selected evidence and re-run the full multi-agent pipeline
+              against a restricted context. The original investigation is never
+              modified. The revised anomaly score is a deterministic
+              recomputation, not a model estimate.
             </p>
           </div>
         </div>
@@ -155,7 +155,9 @@ export default function CounterfactualPanel({
         <section className="rounded-lg border border-line bg-surface">
           <div className="flex items-center justify-between gap-2 border-b border-line px-5 py-4">
             <div>
-              <h3 className="text-sm font-semibold text-white">Exclude evidence</h3>
+              <h3 className="text-sm font-semibold text-white">
+                Exclude evidence
+              </h3>
               <p className="mt-1 text-xs text-slate-400">
                 Select the records to withhold, then run the counterfactual.
               </p>
@@ -170,7 +172,11 @@ export default function CounterfactualPanel({
               <div className="flex items-center justify-between border-b border-line/60 px-5 py-2 text-[11px]">
                 <button
                   type="button"
-                  onClick={() => setExcludedIds(new Set(excludable.map((item) => item.evidence_id)))}
+                  onClick={() =>
+                    setExcludedIds(
+                      new Set(excludable.map((item) => item.evidence_id)),
+                    )
+                  }
                   className="text-cyan-accent underline-offset-2 hover:underline"
                 >
                   Select all
@@ -189,12 +195,15 @@ export default function CounterfactualPanel({
                   return (
                     <li key={item.evidence_id}>
                       <label
+                        htmlFor={`exclude-${item.evidence_id}`}
+                        aria-label={`Exclude evidence ${item.evidence_id}`}
                         className={cn(
                           "flex cursor-pointer items-start gap-3 px-5 py-3 transition-colors hover:bg-surface-raised",
-                          checked && "bg-danger/5"
+                          checked && "bg-danger/5",
                         )}
                       >
                         <input
+                          id={`exclude-${item.evidence_id}`}
                           type="checkbox"
                           checked={checked}
                           onChange={() => toggle(item.evidence_id)}
@@ -206,7 +215,8 @@ export default function CounterfactualPanel({
                               {item.evidence_id}
                             </span>
                             <span className="text-[10px] text-slate-500">
-                              {EVIDENCE_TYPE_LABELS[item.evidence_type] ?? item.evidence_type}
+                              {EVIDENCE_TYPE_LABELS[item.evidence_type] ??
+                                item.evidence_type}
                             </span>
                           </span>
                           <span className="mt-1 block line-clamp-2 text-[11px] text-slate-400">
@@ -219,10 +229,14 @@ export default function CounterfactualPanel({
                 })}
               </ul>
               <div className="border-t border-line px-5 py-4">
-                <label className="text-[11px] font-medium tracking-wide text-slate-500 uppercase">
+                <label
+                  htmlFor="counterfactual-rationale"
+                  className="text-[11px] font-medium tracking-wide text-slate-500 uppercase"
+                >
                   Rationale (optional)
                 </label>
                 <textarea
+                  id="counterfactual-rationale"
                   value={rationale}
                   onChange={(event) => setRationale(event.target.value)}
                   rows={2}
@@ -231,7 +245,10 @@ export default function CounterfactualPanel({
                 />
                 {submitError && (
                   <p className="mt-2 flex items-start gap-1.5 text-[11px] text-danger">
-                    <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" aria-hidden="true" />
+                    <AlertTriangle
+                      className="mt-0.5 h-3 w-3 shrink-0"
+                      aria-hidden="true"
+                    />
                     {submitError}
                   </p>
                 )}
@@ -242,11 +259,16 @@ export default function CounterfactualPanel({
                   className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-md bg-accent px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-accent/90 focus-visible:ring-2 focus-visible:ring-cyan-accent focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {submitting ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                    <Loader2
+                      className="h-3.5 w-3.5 animate-spin"
+                      aria-hidden="true"
+                    />
                   ) : (
                     <FlaskConical className="h-3.5 w-3.5" aria-hidden="true" />
                   )}
-                  {submitting ? "Running counterfactual…" : "Run counterfactual"}
+                  {submitting
+                    ? "Running counterfactual…"
+                    : "Run counterfactual"}
                 </button>
               </div>
             </>
@@ -274,7 +296,6 @@ export default function CounterfactualPanel({
     </div>
   );
 }
-
 function ScenarioHistory({
   list,
   loading,
@@ -282,32 +303,35 @@ function ScenarioHistory({
   selectedId,
   onSelect,
   onRefresh,
-}: {
+}: Readonly<{
   list: CounterfactualListResponse | null;
   loading: boolean;
   error: string | null;
   selectedId: string | null;
   onSelect: (scenario: CounterfactualScenario) => void;
   onRefresh: () => void;
-}) {
+}>) {
   if (loading && !list) return <CardSkeleton />;
   if (error) {
     return (
       <section className="rounded-lg border border-line bg-surface">
-        <ErrorState title="Could not load scenarios" message={error} onRetry={onRefresh} />
+        <ErrorState
+          title="Could not load scenarios"
+          message={error}
+          onRetry={onRefresh}
+        />
       </section>
     );
   }
-
   const items = list?.items ?? [];
-
   return (
     <section className="rounded-lg border border-line bg-surface">
       <div className="flex items-center justify-between gap-2 border-b border-line px-5 py-4">
         <div>
           <h3 className="text-sm font-semibold text-white">Scenario history</h3>
           <p className="mt-1 text-xs text-slate-400">
-            {items.length} counterfactual scenario{items.length === 1 ? "" : "s"} for this investigation.
+            {items.length} counterfactual scenario
+            {items.length === 1 ? "" : "s"} for this investigation.
           </p>
         </div>
         <button
@@ -333,7 +357,7 @@ function ScenarioHistory({
                 onClick={() => onSelect(scenario)}
                 className={cn(
                   "flex w-full flex-col gap-2 px-5 py-4 text-left transition-colors hover:bg-surface-raised",
-                  scenario.scenario_id === selectedId && "bg-surface-raised"
+                  scenario.scenario_id === selectedId && "bg-surface-raised",
                 )}
               >
                 <div className="flex flex-wrap items-center gap-2">
@@ -350,8 +374,7 @@ function ScenarioHistory({
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-400">
-                  {scenario.rationale ??
-                    "No rationale provided."}
+                  {scenario.rationale ?? "No rationale provided."}
                 </p>
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-slate-500">
                   <span>{formatDateTime(scenario.created_at)}</span>
@@ -369,13 +392,19 @@ function ScenarioHistory({
     </section>
   );
 }
-
-function ScenarioDetail({ scenario }: { scenario: CounterfactualScenario }) {
+function ScenarioDetail({
+  scenario,
+}: Readonly<{
+  scenario: CounterfactualScenario;
+}>) {
   return (
     <section className="rounded-lg border border-line bg-surface">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-5 py-4">
         <div className="flex items-center gap-2">
-          <GitCompareArrows className="h-4 w-4 text-cyan-accent" aria-hidden="true" />
+          <GitCompareArrows
+            className="h-4 w-4 text-cyan-accent"
+            aria-hidden="true"
+          />
           <h3 className="text-sm font-semibold text-white">Comparison</h3>
           <StatusBadge
             label={COUNTERFACTUAL_STATUS_LABELS[scenario.status]}
@@ -386,7 +415,9 @@ function ScenarioDetail({ scenario }: { scenario: CounterfactualScenario }) {
         {scenario.revised_investigation_id && (
           <span className="text-[11px] text-slate-500">
             Revised run{" "}
-            <span className="font-mono text-slate-300">{scenario.revised_investigation_id}</span>
+            <span className="font-mono text-slate-300">
+              {scenario.revised_investigation_id}
+            </span>
           </span>
         )}
       </div>
@@ -401,10 +432,17 @@ function ScenarioDetail({ scenario }: { scenario: CounterfactualScenario }) {
       {scenario.status === "failed" && (
         <div className="px-5 py-5">
           <div className="flex items-start gap-2 rounded-md border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">
-            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            <AlertTriangle
+              className="mt-0.5 h-3.5 w-3.5 shrink-0"
+              aria-hidden="true"
+            />
             <div>
-              <p className="font-medium">The counterfactual could not be completed.</p>
-              {scenario.error && <p className="mt-0.5 break-words">{scenario.error}</p>}
+              <p className="font-medium">
+                The counterfactual could not be completed.
+              </p>
+              {scenario.error && (
+                <p className="mt-0.5 break-words">{scenario.error}</p>
+              )}
             </div>
           </div>
         </div>
@@ -429,7 +467,9 @@ function ScenarioDetail({ scenario }: { scenario: CounterfactualScenario }) {
                 key={entry.feature}
                 className="flex flex-wrap items-center gap-2 rounded border border-line bg-surface-raised px-2.5 py-1.5 text-[11px]"
               >
-                <span className="font-medium text-slate-200">{entry.label}</span>
+                <span className="font-medium text-slate-200">
+                  {entry.label}
+                </span>
                 <StatusBadge
                   label={entry.reason === "derived" ? "Derived" : "Direct"}
                   tone={entry.reason === "derived" ? "warning" : "neutral"}
@@ -447,17 +487,18 @@ function ScenarioDetail({ scenario }: { scenario: CounterfactualScenario }) {
     </section>
   );
 }
-
 function ComparisonBody({
   comparison,
-}: {
+}: Readonly<{
   comparison: NonNullable<CounterfactualScenario["comparison"]>;
-}) {
+}>) {
   const { anomaly } = comparison;
   return (
     <div className="space-y-5 px-5 py-5">
       <div className="rounded-md border border-cyan-accent/20 bg-cyan-accent/5 px-3 py-2.5">
-        <p className="text-xs leading-relaxed text-slate-200">{comparison.summary}</p>
+        <p className="text-xs leading-relaxed text-slate-200">
+          {comparison.summary}
+        </p>
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -477,7 +518,8 @@ function ComparisonBody({
             Restricted context
           </p>
           <p className="mt-1 text-xs text-slate-300">
-            {anomaly.retained_feature_count} feature{anomaly.retained_feature_count === 1 ? "" : "s"} retained
+            {anomaly.retained_feature_count} feature
+            {anomaly.retained_feature_count === 1 ? "" : "s"} retained
           </p>
           <p className="mt-1 text-[10px] text-slate-500">
             threshold {anomaly.threshold} · deterministic recomputation
@@ -503,9 +545,21 @@ function ComparisonBody({
         </div>
       )}
 
-      <HypothesisGroup title="Removed hypotheses" changes={comparison.removed_hypotheses} tone="danger" />
-      <HypothesisGroup title="Added hypotheses" changes={comparison.added_hypotheses} tone="success" />
-      <HypothesisGroup title="Retained hypotheses" changes={comparison.retained_hypotheses} tone="neutral" />
+      <HypothesisGroup
+        title="Removed hypotheses"
+        changes={comparison.removed_hypotheses}
+        tone="danger"
+      />
+      <HypothesisGroup
+        title="Added hypotheses"
+        changes={comparison.added_hypotheses}
+        tone="success"
+      />
+      <HypothesisGroup
+        title="Retained hypotheses"
+        changes={comparison.retained_hypotheses}
+        tone="neutral"
+      />
 
       {comparison.assessment_shifts.length > 0 && (
         <div>
@@ -519,9 +573,16 @@ function ComparisonBody({
                 className="flex flex-wrap items-center gap-2 rounded border border-line bg-surface-raised px-2.5 py-1.5 text-[11px]"
               >
                 <span className="text-slate-200">{shift.title}</span>
-                <span className="text-slate-500">{shift.original_assessment}</span>
-                <ArrowRight className="h-3 w-3 text-slate-600" aria-hidden="true" />
-                <span className="text-cyan-accent">{shift.revised_assessment}</span>
+                <span className="text-slate-500">
+                  {shift.original_assessment}
+                </span>
+                <ArrowRight
+                  className="h-3 w-3 text-slate-600"
+                  aria-hidden="true"
+                />
+                <span className="text-cyan-accent">
+                  {shift.revised_assessment}
+                </span>
               </li>
             ))}
           </ul>
@@ -557,19 +618,18 @@ function ComparisonBody({
     </div>
   );
 }
-
 function MetricCard({
   label,
   original,
   revised,
   raw = false,
-}: {
+}: Readonly<{
   label: string;
-  original: number | string | null;
-  revised: number | string | null;
+  original: MetricValue;
+  revised: MetricValue;
   raw?: boolean;
-}) {
-  const format = (value: number | string | null) => {
+}>) {
+  const format = (value: MetricValue) => {
     if (value === null || value === undefined) return "—";
     if (raw || typeof value === "string") return String(value);
     return value.toFixed(4);
@@ -577,14 +637,18 @@ function MetricCard({
   const changed = original !== revised;
   return (
     <div className="rounded-md border border-line bg-surface-raised p-3">
-      <p className="text-[10px] font-medium tracking-wide text-slate-500 uppercase">{label}</p>
+      <p className="text-[10px] font-medium tracking-wide text-slate-500 uppercase">
+        {label}
+      </p>
       <div className="mt-1 flex items-center gap-2 text-xs">
-        <span className="font-mono text-slate-400 tabular-nums">{format(original)}</span>
+        <span className="font-mono text-slate-400 tabular-nums">
+          {format(original)}
+        </span>
         <ArrowRight className="h-3 w-3 text-slate-600" aria-hidden="true" />
         <span
           className={cn(
             "font-mono tabular-nums",
-            changed ? "font-semibold text-cyan-accent" : "text-slate-300"
+            changed ? "font-semibold text-cyan-accent" : "text-slate-300",
           )}
         >
           {format(revised)}
@@ -593,38 +657,56 @@ function MetricCard({
     </div>
   );
 }
-
 function HypothesisGroup({
   title,
   changes,
   tone,
-}: {
+}: Readonly<{
   title: string;
   changes: HypothesisChange[];
   tone: "neutral" | "success" | "danger";
-}) {
+}>) {
   if (changes.length === 0) return null;
-  const Icon = tone === "danger" ? MinusCircle : tone === "success" ? CheckCircle2 : GitCompareArrows;
-  const iconColor =
-    tone === "danger" ? "text-danger" : tone === "success" ? "text-success" : "text-slate-400";
+  const Icon = (function resolveDisplay() {
+    if (tone === "danger") {
+      return MinusCircle;
+    }
+    return tone === "success" ? CheckCircle2 : GitCompareArrows;
+  })();
+  const iconColor = (function resolveDisplay() {
+    if (tone === "danger") {
+      return "text-danger";
+    }
+    return tone === "success" ? "text-success" : "text-slate-400";
+  })();
   return (
     <div>
-      <p className="text-[10px] font-medium tracking-wide text-slate-500 uppercase">{title}</p>
+      <p className="text-[10px] font-medium tracking-wide text-slate-500 uppercase">
+        {title}
+      </p>
       <ul className="mt-1.5 space-y-1.5">
         {changes.map((change, index) => (
           <li
             key={`${change.title}-${index}`}
             className="flex items-start gap-2 rounded border border-line bg-surface-raised px-2.5 py-2 text-[11px]"
           >
-            <Icon className={cn("mt-0.5 h-3 w-3 shrink-0", iconColor)} aria-hidden="true" />
+            <Icon
+              className={cn("mt-0.5 h-3 w-3 shrink-0", iconColor)}
+              aria-hidden="true"
+            />
             <div className="min-w-0">
               <p className="text-slate-200">{change.title}</p>
               {(change.original_assessment || change.revised_assessment) && (
                 <p className="mt-0.5 text-slate-500">
-                  {change.original_assessment ?? "—"} → {change.revised_assessment ?? "—"}
+                  {change.original_assessment ?? "—"} →{" "}
+                  {change.revised_assessment ?? "—"}
                 </p>
               )}
-              {change.note && <p className="mt-0.5 text-[10px] text-slate-500">{change.note}</p>}
+              {change.note && (
+                <p className="mt-0.5 text-[10px] text-slate-500">
+                  {change.note}
+                </p>
+              )}
             </div>
           </li>
         ))}
@@ -632,16 +714,15 @@ function HypothesisGroup({
     </div>
   );
 }
-
 function StringDiff({
   title,
   items,
   tone,
-}: {
+}: Readonly<{
   title: string;
   items: string[];
   tone: "neutral" | "success" | "danger" | "warning";
-}) {
+}>) {
   if (items.length === 0) return null;
   const colors: Record<typeof tone, string> = {
     neutral: "border-line bg-surface-raised text-slate-300",
@@ -651,12 +732,17 @@ function StringDiff({
   };
   return (
     <div>
-      <p className="text-[10px] font-medium tracking-wide text-slate-500 uppercase">{title}</p>
+      <p className="text-[10px] font-medium tracking-wide text-slate-500 uppercase">
+        {title}
+      </p>
       <ul className="mt-1.5 space-y-1">
         {items.map((item, index) => (
           <li
             key={`${item}-${index}`}
-            className={cn("rounded border px-2.5 py-1.5 text-[11px] leading-relaxed", colors[tone])}
+            className={cn(
+              "rounded border px-2.5 py-1.5 text-[11px] leading-relaxed",
+              colors[tone],
+            )}
           >
             {item}
           </li>

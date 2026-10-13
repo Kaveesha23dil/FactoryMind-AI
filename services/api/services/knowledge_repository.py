@@ -85,15 +85,15 @@ class Passage:
 
 
 class KnowledgeRepository:
-    def __init__(self, path: Path | None = None) -> None:
+    def __init__(self, path: Path | None = None, content: bytes | None = None) -> None:
         self.path = Path(path or KNOWLEDGE_PATH)
         self.corpus_meta: dict = {}
         self._passages: list[Passage] = []
         self._by_id: dict[tuple[str, str], Passage] = {}
-        self._load()
+        self._load(content)
 
-    def _load(self) -> None:
-        raw = json.loads(self.path.read_text(encoding="utf-8"))
+    def _load(self, content: bytes | None = None) -> None:
+        raw = json.loads(content.decode('utf-8') if content is not None else self.path.read_text(encoding="utf-8"))
         self.corpus_meta = raw.get("corpus", {})
         passages: list[Passage] = []
         for document in raw.get("documents", []):
@@ -148,17 +148,16 @@ class KnowledgeRepository:
     ) -> list[Passage]:
         """Return the highest-scoring passages for a free-text query.
 
-        Falls back to the first ``top_k`` passages when no query token matches,
-        so the Knowledge Agent always receives a non-empty, cited context.
+        No matching passages means no evidence. Never substitute unrelated text.
         """
+        if top_k <= 0:
+            return []
         query_tokens = _tokenize(query)
         scored = [
             (self._score(passage, query_tokens), passage) for passage in self._passages
         ]
         ranked = sorted(scored, key=lambda x: x[0], reverse=True)
         hits = [passage for score, passage in ranked if score > min_score][:top_k]
-        if not hits:
-            hits = self._passages[:top_k]
         return hits
 
     def catalog(self) -> list[dict]:
@@ -173,6 +172,11 @@ class KnowledgeRepository:
         ]
 
 
-@lru_cache(maxsize=1)
 def get_knowledge_repository() -> KnowledgeRepository:
-    return KnowledgeRepository()
+    # Content key prevents stale citations even for edits with unchanged size.
+    return _repository_for_content(KNOWLEDGE_PATH, KNOWLEDGE_PATH.read_bytes())
+
+
+@lru_cache(maxsize=2)
+def _repository_for_content(path, content):
+    return KnowledgeRepository(path, content=content)

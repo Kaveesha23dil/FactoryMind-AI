@@ -197,7 +197,7 @@ class CounterfactualService:
                 excluded_feature_keys=sorted(excluded_features),
             )
         except Exception as exc:  # noqa: BLE001 - persist failure for the UI
-            logger.exception("Counterfactual scenario %s failed", scenario_id)
+            logger.error("Counterfactual scenario %s failed (%s)", scenario_id, type(exc).__name__)
             self.repository.update(
                 scenario_id,
                 status="failed",

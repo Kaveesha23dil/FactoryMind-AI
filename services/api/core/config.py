@@ -361,8 +361,15 @@ class Settings:
         )
     )
     investigation_max_retries: int = field(
-        default_factory=lambda: _env_int("FACTORYMIND_INVESTIGATION_MAX_RETRIES", 1)
+        default_factory=lambda: _env_int("FACTORYMIND_INVESTIGATION_MAX_RETRIES", 3)
     )
+    provider_cooldown_enabled: bool = field(
+        default_factory=lambda: _env_bool('FACTORYMIND_PROVIDER_COOLDOWN_ENABLED', True)
+    )
+    gemini_concurrency: int = field(default_factory=lambda: max(1, _env_int('FACTORYMIND_GEMINI_CONCURRENCY', 1)))
+    gemini_max_model_calls: int = field(default_factory=lambda: max(1, min(8, _env_int('FACTORYMIND_GEMINI_MAX_MODEL_CALLS', 4))))
+    investigation_cache_enabled: bool = field(default_factory=lambda: _env_bool('FACTORYMIND_INVESTIGATION_CACHE_ENABLED', True))
+    prompt_version: str = field(default_factory=lambda: os.environ.get('FACTORYMIND_PROMPT_VERSION', 'grounded-v2'))
     investigation_max_hypotheses: int = field(
         default_factory=lambda: _env_int("FACTORYMIND_INVESTIGATION_MAX_HYPOTHESES", 4)
     )

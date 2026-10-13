@@ -11,11 +11,12 @@ import asyncio
 import logging
 import sqlite3
 import uuid
-from datetime import datetime, timezone
+import time
+from datetime import datetime, timezone, timedelta
 from typing import Any, Callable
 
 from services.api.agents.orchestrator import Orchestrator
-from services.api.agents.runtime import build_runtime
+from services.api.agents.runtime import build_runtime, InvestigationProviderError
 from services.api.core import config
 from services.api.services.incident_service import IncidentNotFoundError
 from services.api.services.investigation_repository import (
@@ -122,19 +123,82 @@ class InvestigationService:
 
     # -- commands --------------------------------------------------------
 
-    def start_investigation(self, incident_id: str) -> dict:
+    def _provider_cooldown(self) -> str | None:
+        if not config.settings.provider_cooldown_enabled:
+            return None
+        if config.settings.ai_provider == 'google':
+            from services.api.agents.request_control import provider_cooldown
+            cooldown = provider_cooldown(config.settings.gemini_model)
+            if cooldown:
+                return (datetime.now(timezone.utc) + timedelta(seconds=cooldown[1])).isoformat()
+        # Persisted failures make the cooldown survive API/worker restarts.
+        _, jobs = self.repository.list_all(100, 0, 'failed')
+        now = datetime.now(timezone.utc)
+        deadlines = []
+        for job in jobs:
+            if job['provider'] != config.settings.ai_provider or job['model'] != config.settings.gemini_model:
+                continue
+            failure = InvestigationProviderError(job.get('error') or '')
+            delay = failure.retry_after_seconds
+            if delay is None or delay <= 60 or not job.get('completed_at'):
+                continue
+            try:
+                deadline = datetime.fromisoformat(job['completed_at']) + timedelta(seconds=delay)
+                if deadline > now:
+                    deadlines.append(deadline)
+            except (ValueError, TypeError, OverflowError):
+                continue
+        return max(deadlines).isoformat() if deadlines else None
+
+    def start_investigation(self, incident_id: str, force_rerun: bool = False) -> dict:
+        started = time.perf_counter()
         if not config.settings.ai_investigation_enabled:
             raise InvestigationDisabledError(
                 "AI investigation is disabled (set AI_INVESTIGATION_ENABLED=true)"
             )
         # Validate the incident exists (raises IncidentNotFoundError).
-        self.incident_service.get_incident(incident_id)
+        incident = self.incident_service.get_incident(incident_id)
+        from services.api.services.investigation_cache import report_key, evidence_digest, report_digest
+        try:
+            key = report_key(incident)
+        except Exception as exc:
+            # Allow the queued execution path to persist a clear failed state
+            # when source preparation is unavailable, rather than an API 500.
+            key = None
+            logger.warning('Investigation cache preparation unavailable (%s)', type(exc).__name__)
+        if key and config.settings.investigation_cache_enabled and not force_rerun:
+            total, jobs = self.repository.list_for_incident(incident_id, 100, 0)
+            for job in jobs:
+                report = job.get('report') or {}
+                if (job['status'] == 'completed' and report.get('cache_key') == key
+                    and not report.get('counterfactual') and not report.get('critic_review', {}).get('revision_required')):
+                    stored = self.repository.get_evidence(job['investigation_id'])
+                    ids = {r['evidence_id'] for r in stored}
+                    if (ids == set(report.get('evidence_catalog', []))
+                        and evidence_digest(stored) == report.get('cache_evidence_digest')
+                        and report_digest(report) == report.get('cache_report_digest')):
+                        logger.info('investigation_cache_hit', extra={'usage': {'event': 'investigation_cache_hit',
+                            'model': job['model'], 'request_count': 0, 'latency_ms': round((time.perf_counter()-started)*1000, 2),
+                            'input_tokens': 0, 'output_tokens': 0, 'error_category': None}})
+                        reused = self.get(job['investigation_id'])
+                        reused['cache_reused'] = True
+                        return reused
+
+        retry_at = self._provider_cooldown()
+        if retry_at:
+            raise InvestigationDisabledError(f'Gemini quota cooldown is active until {retry_at}. Wait for quota reset or review the project quota in Google AI Studio.')
 
         active = self.repository.find_active(incident_id)
         if active is not None:
             raise DuplicateInvestigationError(active["investigation_id"])
 
-        job = self.create_queued_investigation(incident_id)
+        try:
+            job = self.create_queued_investigation(incident_id)
+        except sqlite3.IntegrityError as exc:
+            active = self.repository.find_active(incident_id)
+            if active:
+                raise DuplicateInvestigationError(active['investigation_id']) from exc
+            raise
 
         investigation_id = job["investigation_id"]
         if config.settings.investigation_async:
@@ -191,16 +255,16 @@ class InvestigationService:
         if job["status"] == "running":
             return job
 
-        self.repository.update(
-            investigation_id,
-            status="running",
-            started_at=_utcnow_iso(),
-            error=None,
-            attempt_count=int(job.get("attempt_count", 0)) + 1,
-        )
+        if not self.repository.claim(investigation_id):
+            return self.get(investigation_id)
 
         try:
+            retry_at = self._provider_cooldown()
+            if retry_at:
+                raise InvestigationDisabledError(f'Gemini quota cooldown is active until {retry_at}.')
             runtime = self._runtime_factory()
+            from services.api.services.investigation_cache import report_key, evidence_digest, report_digest
+            key_before = report_key(self.incident_service.get_incident(job['incident_id'])) if prepared is None else None
             orchestrator = Orchestrator(
                 runtime=runtime, incident_service=self.incident_service
             )
@@ -214,6 +278,13 @@ class InvestigationService:
                 )
             )
             report = result.report
+            if prepared is None:
+                from services.api.services.investigation_cache import report_key
+                key_after = report_key(self.incident_service.get_incident(job['incident_id']))
+                report['cache_key'] = key_before if key_before == key_after else None
+                report['cache_evidence_digest'] = evidence_digest(result.evidence)
+            report['usage'] = list(getattr(runtime, 'request_metrics', []))
+            report['cache_report_digest'] = report_digest(report)
             self.repository.save_evidence(result.evidence)
             self.repository.update(
                 investigation_id,
@@ -225,7 +296,13 @@ class InvestigationService:
             )
             logger.info("Investigation completed")
         except Exception as exc:  # noqa: BLE001 - surface any failure to the client
-            logger.exception("Investigation failed")
+            logger.error("Investigation failed category=%s", InvestigationProviderError(str(exc)).category)
+            current = self.repository.get(investigation_id)
+            for activity in (current or {}).get('agent_activity', []):
+                if activity.get('status') == 'running':
+                    self.repository.upsert_agent(investigation_id, {**activity, 'status': 'failed',
+                        'summary': f"Provider execution stopped ({InvestigationProviderError(str(exc)).category}); review quota or model availability before retrying.",
+                        'completed_at': _utcnow_iso()})
             self.repository.append_stage(
                 investigation_id,
                 {"stage": "failed", "message": str(exc), "timestamp": _utcnow_iso()},
@@ -245,6 +322,14 @@ class InvestigationService:
         job = self.repository.get(investigation_id)
         if job is None:
             raise InvestigationNotFoundError(investigation_id)
+        failure = InvestigationProviderError(job.get('error') or '')
+        delay = failure.retry_after_seconds
+        job['retry_available_at'] = self._provider_cooldown() if job['status'] == 'failed' else None
+        if config.settings.provider_cooldown_enabled and delay and delay > 60 and job.get('completed_at'):
+            try:
+                job['retry_available_at'] = (datetime.fromisoformat(job['completed_at']) + timedelta(seconds=delay)).isoformat()
+            except (ValueError, TypeError, OverflowError):
+                pass
         return job
 
     def list_for_incident(

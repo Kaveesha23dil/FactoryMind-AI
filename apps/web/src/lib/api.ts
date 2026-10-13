@@ -288,9 +288,9 @@ export const getIncidentInvestigations = (
   );
 };
 
-export const startInvestigation = (incidentId: string) =>
+export const startInvestigation = (incidentId: string, forceRerun = false) =>
   apiFetch<InvestigationStartResponse>(
-    `/api/incidents/${encodeURIComponent(incidentId)}/investigate`,
+    `/api/incidents/${encodeURIComponent(incidentId)}/investigate?force_rerun=${forceRerun}`,
     { method: "POST" },
   );
 

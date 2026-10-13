@@ -26,11 +26,21 @@ def get_incident_measurements(incident_id: str) -> dict[str, Any]:
     Raises ``IncidentNotFoundError`` when the incident does not exist.
     """
     incident = _service().get_incident(incident_id)
+    raw = incident['source_measurements']
+    # Defense in depth for historical/imported snapshots: allow physical data
+    # only, even if a stored dictionary contains evaluation labels or notes.
+    keys = ('record_id', 'product_id', 'machine_type', 'air_temperature_k',
+            'air_temperature_c', 'process_temperature_k', 'process_temperature_c',
+            'rotational_speed_rpm', 'torque_nm', 'tool_wear_min')
+    measurements = {key: raw[key] for key in keys if key in raw}
+    measurements['derived_features'] = {key: value for key, value in
+                                       raw.get('derived_features', {}).items()
+                                       if key in config.FEATURE_KEYS}
     return {
         "incident_id": incident_id,
         "record_id": incident["record_id"],
         "machine_type": incident["machine_type"],
-        "measurements": incident["source_measurements"],
+        "measurements": measurements,
         "ground_truth_used_for_investigation": False,
     }
 

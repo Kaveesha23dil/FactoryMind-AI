@@ -18,6 +18,7 @@ from pathlib import Path
 from google.genai import types
 
 from services.api.agents import vision_agent
+from services.api.agents.orchestrator import Orchestrator
 from services.api.agents.runtime import build_runtime
 from services.api.core import config
 from services.api.services import image_utils
@@ -152,6 +153,9 @@ class VisualEvidenceService:
             image_id, status="analyzing", error=None, investigation_id=investigation_id
         )
         try:
+            retry_at = self.investigations._provider_cooldown()
+            if retry_at:
+                raise VisualEvidenceError(f'Gemini quota cooldown is active until {retry_at}.')
             data = path.read_bytes()
             context = {
                 "incident": get_incident_context(record["incident_id"]),
@@ -162,7 +166,7 @@ class VisualEvidenceService:
             image_part = types.Part.from_bytes(data=data, mime_type=record["mime_type"])
             runtime = runtime_factory()
             raw = asyncio.run(
-                runtime.run(vision_agent.SPEC, prompt, image_parts=[image_part])
+                Orchestrator(runtime, self.incident_service)._run_agent(vision_agent.SPEC, context, image_parts=[image_part])
             )
             analysis = vision_agent.VisualAnalysis.model_validate(raw)
             self.repository.update(
@@ -176,7 +180,7 @@ class VisualEvidenceService:
             if investigation_id:
                 self._attach_evidence(image_id, investigation_id, analysis)
         except Exception as exc:  # noqa: BLE001 - persist failure for the UI
-            logger.exception("Visual analysis failed")
+            logger.error("Visual analysis failed (%s)", type(exc).__name__)
             self.repository.update(
                 image_id,
                 status="failed",

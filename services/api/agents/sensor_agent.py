@@ -15,7 +15,6 @@ from services.api.agents.prompts import (
     format_anomaly,
     format_baselines,
     format_evidence_catalog,
-    format_measurements,
 )
 
 
@@ -65,10 +64,10 @@ def build_prompt(context: dict[str, Any]) -> str:
     return (
         f"Incident: {incident['incident_id']} (record {incident['record_id']}, "
         f"machine type {incident['machine_type']}).\n\n"
-        f"## Recorded sensor measurements\n{format_measurements(context['measurements'])}\n\n"
         f"## Deterministic anomaly findings\n{format_anomaly(context['anomaly'])}\n\n"
         f"## Training baselines\n{format_baselines(context['baselines'])}\n\n"
-        f"## Available evidence IDs (cite only these)\n{format_evidence_catalog(context['evidence'])}\n\n"
+        f"## Available sensor evidence IDs (cite only these)\n"
+        f"{format_evidence_catalog(r for r in context['evidence'] if r['evidence_type'] != 'manual_passage')}\n\n"
         "Produce the SensorAnalysis structured output."
     )
 

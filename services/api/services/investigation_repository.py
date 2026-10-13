@@ -54,6 +54,9 @@ class InvestigationRepository(ABC):
     def update(self, investigation_id: str, **fields: Any) -> None: ...
 
     @abstractmethod
+    def claim(self, investigation_id: str) -> bool: ...
+
+    @abstractmethod
     def append_stage(self, investigation_id: str, entry: dict) -> None: ...
 
     @abstractmethod
@@ -135,6 +138,15 @@ class SqliteInvestigationRepository(InvestigationRepository):
                 (investigation_id,),
             ).fetchone()
         return self._row_to_job(row) if row else None
+
+    def claim(self, investigation_id: str) -> bool:
+        """Atomic across API/worker connections: only one runner owns a job."""
+        now = _utcnow_iso()
+        with self.database.connect() as connection:
+            result = connection.execute("UPDATE investigations SET status='running', started_at=?, updated_at=?, error=NULL, attempt_count=attempt_count+1 WHERE investigation_id=? AND status IN ('queued','failed')",
+                                        (now, now, investigation_id))
+            connection.commit()
+            return result.rowcount == 1
 
     def find_active(self, incident_id: str) -> dict | None:
         with self.database.connect() as connection:

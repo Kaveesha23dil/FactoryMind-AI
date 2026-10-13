@@ -68,6 +68,8 @@ def main() -> None:
     Useful for Cloud Tasks / Cloud Run style deployments where the API and the
     worker are separate processes sharing the same persistent job store.
     """
+    from services.api.core.logging import configure_logging
+    configure_logging()
     parser = argparse.ArgumentParser(
         prog="python -m services.api.services.investigation_worker",
         description="Process queued AI investigations from a shared job store.",

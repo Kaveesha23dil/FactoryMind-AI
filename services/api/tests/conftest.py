@@ -139,6 +139,11 @@ _CRITIC_RESPONSE = {
     "missing_evidence": ["Vibration data"],
     "citation_issues": [],
     "revision_required": False,
+    "citation_reviews": [
+        {"hypothesis_id": "H-001", "evidence_id": "EV-SENSOR-001", "relationship": "supporting", "valid": True, "reason": "Observed operating measurement."},
+        {"hypothesis_id": "H-001", "evidence_id": "EV-MANUAL-001", "relationship": "supporting", "valid": True, "reason": "General guidance for a possible explanation."},
+        {"hypothesis_id": "H-002", "evidence_id": "EV-ANOMALY-001", "relationship": "supporting", "valid": True, "reason": "Unusual observation warrants an alternative explanation."},
+    ],
 }
 
 _VISION_RESPONSE = {

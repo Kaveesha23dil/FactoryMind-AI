@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import random
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Protocol
@@ -44,7 +45,8 @@ from services.api.tools.incident_tools import (
     get_incident_context,
     get_incident_measurements,
 )
-from services.api.tools.knowledge_tools import retrieve_knowledge
+from services.api.tools.knowledge_tools import retrieve_knowledge, get_passage
+from services.api.tools.grounding import normalize_analysis, text_issues, critic_requires_revision, validate_sensor_snapshot
 
 logger = logging.getLogger(__name__)
 
@@ -124,6 +126,8 @@ def _revision_feedback(critic: dict[str, Any], rejected: list[str]) -> str:
         parts.append(f"- unsupported claim: {claim}")
     for item in critic.get("citation_issues", []) or []:
         parts.append(f"- citation problem: {item}")
+    for key in ("contradictions", "missing_evidence", "deterministic_findings"):
+        parts.extend(f"- {key}: {item}" for item in critic.get(key, []) or [])
     if rejected:
         parts.append(
             "- invalid evidence IDs that must be removed or replaced: "
@@ -152,11 +156,11 @@ class Orchestrator:
             if timeout_seconds is not None
             else config.settings.investigation_timeout_seconds
         )
-        self.max_retries = int(
+        self.max_retries = max(0, min(5, int(
             max_retries
             if max_retries is not None
             else config.settings.investigation_max_retries
-        )
+        )))
         self.max_hypotheses = int(
             max_hypotheses
             if max_hypotheses is not None
@@ -166,7 +170,7 @@ class Orchestrator:
     # -- agent execution -------------------------------------------------
 
     async def _run_agent(
-        self, spec: AgentSpec, context: dict[str, Any]
+        self, spec: AgentSpec, context: dict[str, Any], image_parts=None
     ) -> dict[str, Any]:
         prompt = spec.build_prompt(context)
         attempts = self.max_retries + 1
@@ -174,23 +178,28 @@ class Orchestrator:
         for attempt in range(attempts):
             try:
                 output = await asyncio.wait_for(
-                    self.runtime.run(spec, prompt), timeout=self.timeout
+                    self.runtime.run(spec, prompt, image_parts=image_parts) if image_parts is not None else self.runtime.run(spec, prompt), timeout=self.timeout
                 )
                 return spec.output_schema.model_validate(output).model_dump()
             except (asyncio.TimeoutError, InvestigationProviderError) as exc:
-                last_error = exc
+                last_error = (InvestigationProviderError(f'Timed out after {self.timeout:g} seconds')
+                              if isinstance(exc, asyncio.TimeoutError) else exc)
                 logger.warning(
-                    "Agent %s attempt %d/%d failed: %s",
+                    "Agent %s attempt %d/%d failed category=%s",
                     spec.name,
                     attempt + 1,
                     attempts,
-                    exc,
+                    last_error.category,
                 )
+                retryable = isinstance(exc, asyncio.TimeoutError) or exc.retryable
+                if not retryable:
+                    break
                 if attempt < attempts - 1:
-                    await asyncio.sleep(min(2**attempt, 4))
+                    provider_delay = exc.retry_after_seconds if isinstance(exc, InvestigationProviderError) else None
+                    await asyncio.sleep(max(min(5 * 2**attempt, 30), provider_delay or 0) + random.uniform(0, 1))
             except Exception as exc:  # validation / unexpected
-                last_error = exc
-                logger.warning("Agent %s validation error: %s", spec.name, exc)
+                last_error = InvestigationProviderError(f'Invalid structured output ({type(exc).__name__}); no report can be verified.')
+                logger.warning("Agent %s validation error: %s", spec.name, type(exc).__name__)
                 break
         raise InvestigationError(f"{spec.name} failed: {last_error}")
 
@@ -210,10 +219,16 @@ class Orchestrator:
             measurements = get_incident_measurements(incident_id)
             anomaly = get_anomaly_analysis(incident_id)
             baselines = get_baseline_statistics(incident["machine_type"])
+            validate_sensor_snapshot(measurements, anomaly)
 
             passages = retrieve_knowledge(
                 _knowledge_query(anomaly), top_k=config.KNOWLEDGE_TOP_K
             )
+            for passage in passages:
+                source = get_passage(passage['document_id'], passage['section_id'])
+                if source is None or any(passage.get(k) != source.get(k) for k in
+                                         ('text', 'document_title', 'heading')):
+                    raise InvestigationError("Retrieved passage failed corpus provenance validation")
             created_at = _utcnow_iso()
             evidence_records = build_deterministic_evidence(
                 investigation_id=investigation_id,
@@ -239,6 +254,14 @@ class Orchestrator:
             counterfactual = prepared.counterfactual
             reporter.evidence(evidence_records)
 
+        # Bind by document/section identity, not by list position (counterfactual
+        # exclusions leave gaps in the original immutable IDs).
+        manual_records = [r for r in evidence_records if r['evidence_type'] == 'manual_passage']
+        by_source = {(r['payload']['document_id'], r['payload']['section_id']): r
+                     for r in manual_records}
+        passages = [{**p, 'evidence_id': by_source[(p['document_id'], p['section_id'])]['evidence_id']}
+                    for p in passages if (p['document_id'], p['section_id']) in by_source]
+        grounding_findings: list[str] = []
         base_context: dict[str, Any] = {
             "incident": incident_context,
             "measurements": measurements,
@@ -252,6 +275,8 @@ class Orchestrator:
         reporter.stage("analyzing_measurements", "Running Sensor Analysis Agent")
         reporter.agent("sensor_agent", "running")
         sensor_analysis = await self._run_agent(sensor_agent.SPEC, base_context)
+        sensor_analysis, issues = normalize_analysis(sensor_analysis, catalog, 'sensor')
+        grounding_findings.extend(issues)
         reporter.agent(
             "sensor_agent",
             "completed",
@@ -264,6 +289,10 @@ class Orchestrator:
         reporter.stage("retrieving_knowledge", "Running Knowledge Retrieval Agent")
         reporter.agent("knowledge_agent", "running")
         knowledge_analysis = await self._run_agent(knowledge_agent.SPEC, base_context)
+        knowledge_analysis, issues = normalize_analysis(knowledge_analysis, catalog, 'knowledge')
+        grounding_findings.extend(issues)
+        if not manual_records:
+            grounding_findings.append('Missing evidence: no matching maintenance documentation retrieved.')
         reporter.agent(
             "knowledge_agent",
             "completed",
@@ -295,9 +324,12 @@ class Orchestrator:
         reporter.agent("critic_agent", "running")
         critic_context = {**base_context, "draft": draft}
         critic_output = await self._run_agent(critic_agent.SPEC, critic_context)
+        self._apply_citation_reviews(hypotheses, critic_output)
 
         revision_count = 0
-        needs_revision = bool(critic_output.get("revision_required")) or bool(rejected)
+        deterministic_issues = self._draft_issues(draft, hypotheses, evidence_records)
+        critic_output['deterministic_findings'] = grounding_findings + deterministic_issues
+        needs_revision = critic_requires_revision(critic_output) or bool(rejected) or bool(deterministic_issues)
         if needs_revision and revision_count < MAX_REVISIONS:
             revision_count += 1
             feedback = _revision_feedback(critic_output, rejected)
@@ -314,12 +346,33 @@ class Orchestrator:
             critic_output = await self._run_agent(
                 critic_agent.SPEC, {**base_context, "draft": draft}
             )
+            self._apply_citation_reviews(hypotheses, critic_output)
+        final_issues = self._draft_issues(draft, hypotheses, evidence_records)
+        critic_output['deterministic_findings'] = list(dict.fromkeys(grounding_findings + final_issues))
+        critic_output['revision_required'] = critic_requires_revision(critic_output) or bool(final_issues) or bool(grounding_findings)
+        if critic_output['revision_required']:
+            critic_output['verification_outcome'] = 'revision required'
+        # Do not publish narrative containing invented sources or quantities.
+        if text_issues(draft.get('summary', ''), evidence_records):
+            draft['summary'] = 'Unverified summary withheld. Review evidence and critic findings before drawing conclusions.'
+        for hypothesis in hypotheses:
+            linked = [catalog[i] for i in hypothesis.supporting_evidence_ids + hypothesis.contradicting_evidence_ids]
+            if text_issues(hypothesis.description, linked):
+                hypothesis.description = 'Unverified description withheld; further evidence is required.'
+                hypothesis.assessment = 'unsupported'
+            if text_issues(hypothesis.title, linked):
+                hypothesis.title = 'Unverified hypothesis'
+                hypothesis.assessment = 'unsupported'
+            hypothesis.verification_steps = [step for step in hypothesis.verification_steps
+                                             if not text_issues(step, evidence_records)]
 
         reporter.agent(
             "critic_agent",
             "completed",
             summary=critic_output.get("verification_outcome"),
-            evidence_count=len(critic_output.get("issues_found", []) or []),
+            evidence_count=len(set(issue for key in ('issues_found', 'unsupported_claims',
+                'contradictions', 'citation_issues', 'deterministic_findings')
+                for issue in critic_output.get(key, []) or [])),
         )
 
         report = self._build_report(
@@ -334,9 +387,62 @@ class Orchestrator:
             counterfactual=counterfactual,
         )
         report["agent_activity"] = reporter.activity()
+        report['sensor_analysis'] = sensor_analysis
+        report['knowledge_analysis'] = knowledge_analysis
         return InvestigationResult(report=report, evidence=evidence_records)
 
     # -- assembly --------------------------------------------------------
+
+    @staticmethod
+    def _apply_citation_reviews(hypotheses, critic_output) -> None:
+        by_id = {h.hypothesis_id: h for h in hypotheses}
+        reviewed = set()
+        for review in critic_output.get('citation_reviews', []):
+            hypothesis = by_id.get(review['hypothesis_id'])
+            if hypothesis is None:
+                critic_output.setdefault('citation_issues', []).append('Critic referenced an unknown hypothesis.')
+                continue
+            links = (hypothesis.supporting_evidence_ids if review['relationship'] == 'supporting'
+                     else hypothesis.contradicting_evidence_ids)
+            reviewed.add((review['hypothesis_id'], review['evidence_id'], review['relationship']))
+            if review['evidence_id'] not in links:
+                critic_output.setdefault('citation_issues', []).append('Critic referenced an unknown evidence relationship.')
+            elif not review['valid']:
+                links.remove(review['evidence_id'])
+                hypothesis.assessment = 'unsupported'
+                hypothesis.missing_evidence.append(review['reason'])
+                critic_output.setdefault('citation_issues', []).append(
+                    f"{review['hypothesis_id']} / {review['evidence_id']}: {review['reason']}")
+        for hypothesis in hypotheses:
+            for relationship, links in (('supporting', hypothesis.supporting_evidence_ids),
+                                        ('contradicting', hypothesis.contradicting_evidence_ids)):
+                for evidence_id in list(links):
+                    if (hypothesis.hypothesis_id, evidence_id, relationship) not in reviewed:
+                        links.remove(evidence_id)
+                        hypothesis.assessment = 'unsupported'
+                        issue = f'{hypothesis.hypothesis_id} / {evidence_id}: citation relationship was not reviewed.'
+                        hypothesis.missing_evidence.append(issue)
+                        critic_output.setdefault('citation_issues', []).append(issue)
+
+
+    @staticmethod
+    def _draft_issues(draft, hypotheses, records) -> list[str]:
+        issues = text_issues(draft.get('summary', ''), records)
+        by_id = evidence_catalog(records)
+        if not hypotheses:
+            issues.append('Missing evidence: no hypotheses were provided.')
+        for hypothesis in hypotheses:
+            if not hypothesis.supporting_evidence_ids:
+                issues.append(f'{hypothesis.hypothesis_id}: no supporting evidence; assessment is unsupported.')
+            linked = [by_id[i] for i in hypothesis.supporting_evidence_ids + hypothesis.contradicting_evidence_ids]
+            issues.extend(text_issues(hypothesis.description, linked))
+            issues.extend(text_issues(hypothesis.title, linked))
+            for step in hypothesis.verification_steps:
+                issues.extend(text_issues(step, records))
+            overlap = set(hypothesis.supporting_evidence_ids) & set(hypothesis.contradicting_evidence_ids)
+            if overlap:
+                issues.append(f'{hypothesis.hypothesis_id}: same evidence marked supporting and contradicting: {sorted(overlap)}')
+        return issues
 
     def _normalize_hypotheses(
         self, draft: dict[str, Any], catalog: dict[str, dict[str, Any]]
@@ -356,6 +462,17 @@ class Orchestrator:
             assessment = item.get("assessment", "weak")
             if assessment not in ("plausible", "weak", "unsupported"):
                 assessment = "weak"
+            missing = list(item.get('missing_evidence', []) or [])
+            if not support:
+                assessment = 'unsupported'
+                missing.append('No validated supporting evidence is available.')
+            if set(support) & set(contradict):
+                assessment = 'unsupported'
+                missing.append('Resolve evidence marked as both supporting and contradicting.')
+                overlap = set(support) & set(contradict)
+                rejected.extend(sorted(overlap))
+                support = [i for i in support if i not in overlap]
+                contradict = [i for i in contradict if i not in overlap]
             hypotheses.append(
                 Hypothesis(
                     hypothesis_id=item.get("hypothesis_id") or f"H-{index:03d}",
@@ -363,7 +480,7 @@ class Orchestrator:
                     description=item.get("description") or "",
                     supporting_evidence_ids=support,
                     contradicting_evidence_ids=contradict,
-                    missing_evidence=list(item.get("missing_evidence", []) or []),
+                    missing_evidence=missing,
                     verification_steps=list(item.get("verification_steps", []) or []),
                     assessment=assessment,
                 )
@@ -434,10 +551,10 @@ class Orchestrator:
         counterfactual: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         rejected_unique = sorted(set(rejected))
-        deterministic_findings: list[str] = []
+        deterministic_findings: list[str] = list(critic_output.get('deterministic_findings', []))
         if rejected_unique:
             deterministic_findings.append(
-                "Rejected nonexistent evidence references: "
+                "Rejected invalid or conflicting evidence references: "
                 + ", ".join(rejected_unique)
             )
 
@@ -456,6 +573,7 @@ class Orchestrator:
             ),
             missing_evidence=list(critic_output.get("missing_evidence", []) or []),
             citation_issues=list(critic_output.get("citation_issues", []) or []),
+            citation_reviews=list(critic_output.get('citation_reviews', []) or []),
             revision_required=bool(critic_output.get("revision_required"))
             or bool(rejected_unique),
             deterministic_findings=deterministic_findings,

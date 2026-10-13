@@ -1,0 +1,65 @@
+{
+  "measurement": "mocked ADK model invocations, not live HTTP/billing measurements",
+  "workloads": [
+    {
+      "name": "fresh_investigation",
+      "model_invocations": 4,
+      "agents": [
+        "sensor_agent",
+        "knowledge_agent",
+        "investigation_agent",
+        "critic_agent"
+      ],
+      "prompt_characters": 20316
+    },
+    {
+      "name": "unchanged_repeat_cache_disabled_baseline",
+      "model_invocations": 4,
+      "agents": [
+        "sensor_agent",
+        "knowledge_agent",
+        "investigation_agent",
+        "critic_agent"
+      ],
+      "prompt_characters": 20316
+    },
+    {
+      "name": "unchanged_repeat_cache_enabled",
+      "model_invocations": 0,
+      "agents": [],
+      "prompt_characters": 0
+    },
+    {
+      "name": "explicit_rerun",
+      "model_invocations": 4,
+      "agents": [
+        "sensor_agent",
+        "knowledge_agent",
+        "investigation_agent",
+        "critic_agent"
+      ],
+      "prompt_characters": 20316
+    },
+    {
+      "name": "counterfactual_excluding_sensor",
+      "model_invocations": 6,
+      "agents": [
+        "sensor_agent",
+        "knowledge_agent",
+        "investigation_agent",
+        "critic_agent",
+        "investigation_agent",
+        "critic_agent"
+      ],
+      "prompt_characters": 28599
+    },
+    {
+      "name": "visual_inspection",
+      "model_invocations": 1,
+      "agents": [
+        "vision_agent"
+      ],
+      "prompt_characters": 439
+    }
+  ]
+}

@@ -6,12 +6,20 @@ able to disagree and request a revision; it is not a rubber stamp.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from services.api.agents.base import AgentSpec
 from services.api.agents.prompts import format_evidence_catalog
+
+
+class CitationReview(BaseModel):
+    hypothesis_id: str
+    evidence_id: str
+    relationship: Literal['supporting', 'contradicting']
+    valid: bool
+    reason: str
 
 
 class CriticReviewOut(BaseModel):
@@ -30,6 +38,7 @@ class CriticReviewOut(BaseModel):
         description="Hypotheses that cite evidence which does not support the claim.",
     )
     revision_required: bool = False
+    citation_reviews: list[CitationReview] = Field(default_factory=list)
 
 
 INSTRUCTION = (
@@ -45,6 +54,11 @@ INSTRUCTION = (
     "5. You must be willing to disagree. Set revision_required=true and list concrete "
     "issues when the draft is not adequately supported. Do not approve by default.\n"
     "6. Never invent evidence IDs or documents.\n"
+    "7. In citation_reviews, assess every hypothesis/evidence relationship: "
+    "provide hypothesis_id, evidence_id, relationship (supporting/contradicting), "
+    "valid and a reason. Mark valid=false when the passage or measurement does "
+    "not justify the stated relationship. Document guidance alone cannot confirm "
+    "a physical fault. Missing measurements must limit conclusions.\n"
     "Return only the requested structured output."
 )
 

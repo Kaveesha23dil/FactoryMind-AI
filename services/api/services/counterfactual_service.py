@@ -66,7 +66,8 @@ class CounterfactualService:
             investigation_service = get_service()
         self.investigations = investigation_service
         self.incident_service = investigation_service.incident_service
-        self.repository = repository or SqliteCounterfactualRepository()
+        from services.api.services.firestore_repository import repository as select_repository
+        self.repository = repository or select_repository('counterfactuals', SqliteCounterfactualRepository)
         self.repository.initialize()
 
     @staticmethod
@@ -149,6 +150,8 @@ class CounterfactualService:
             evidence_records=revised_evidence,
             counterfactual=counterfactual_meta,
         )
+        from dataclasses import asdict
+        self.investigations.repository.update(revised_investigation_id, prepared_context=asdict(prepared))
 
         dependency_trace = self._dependency_trace(
             excluded_features, provenance, cleaned, by_id

@@ -10,6 +10,20 @@ from services.api.db.database import Database
 
 @asynccontextmanager
 async def request_slot():
+    if config.settings.persistence_backend == 'firestore':
+        from services.api.agents import firestore_control
+        token = uuid.uuid4().hex
+        acquired = False
+        try:
+            while not acquired:
+                acquired = await asyncio.to_thread(firestore_control.acquire, token, config.settings.investigation_timeout_seconds+60)
+                if not acquired:
+                    await asyncio.sleep(0.2)
+            yield
+        finally:
+            if acquired:
+                await asyncio.to_thread(firestore_control.release, token)
+        return
     database = Database()
     database.initialize()
     token = uuid.uuid4().hex
@@ -38,6 +52,9 @@ async def request_slot():
 
 
 def provider_cooldown(model):
+    if config.settings.persistence_backend == 'firestore':
+        from services.api.agents.firestore_control import cooldown
+        return cooldown(model)
     database = Database()
     database.initialize()
     with database.connect() as connection:
@@ -53,6 +70,10 @@ def save_cooldown(model, failure):
         # claim that the account quota will reset in five minutes.
         delay = 300
     if not delay or delay <= 60:
+        return
+    if config.settings.persistence_backend == 'firestore':
+        from services.api.agents.firestore_control import save
+        save(model, failure.category, delay)
         return
     database = Database()
     database.initialize()

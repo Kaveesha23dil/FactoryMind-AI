@@ -4,8 +4,8 @@ Wires dataset/telemetry, anomaly detection, and incident management routers,
 configures CORS from settings, installs structured logging, and warms the
 anomaly engine / incident store at startup.
 
-Local-development API only; state-changing incident endpoints are NOT
-authenticated or hardened for public deployment.
+Local development and private Cloud Run profiles share the existing API.
+Production enforces verified service principals and durable cloud storage.
 """
 
 from __future__ import annotations
@@ -32,6 +32,8 @@ from services.api.services.anomaly_engine import get_engine
 from services.api.routes.incidents import get_service
 from services.api.routes.investigations import get_service as get_investigation_service
 from services.api.core.logging import JsonLogFormatter, configure_logging
+from services.api.core.production import validate_configuration
+from services.api.core.security import authorize
 
 configure_logging()
 logger = logging.getLogger("factorymind.api")
@@ -40,12 +42,15 @@ logger = logging.getLogger("factorymind.api")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     started = time.perf_counter()
+    validate_configuration()
+    app.state.ready = False
     get_service().initialize()
     investigation_service = get_investigation_service()
     investigation_service.initialize()
-    if config.settings.investigation_async:
+    if config.settings.investigation_async and config.settings.job_dispatch == 'thread':
         investigation_service.start_worker()
     summary = get_engine().summary()
+    app.state.ready = True
     logger.info(
         "Startup complete in %.2fs: %d observations scored (%d anomalies), store ready at %s",
         time.perf_counter() - started,
@@ -56,6 +61,7 @@ async def lifespan(app: FastAPI):
     try:
         yield
     finally:
+        app.state.ready = False
         investigation_service.stop_worker()
 
 
@@ -76,6 +82,26 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.middleware('http')(authorize)
+
+
+@app.get('/healthz', include_in_schema=False)
+def liveness():
+    return {'status': 'ok'}
+
+
+@app.get('/readyz', include_in_schema=False)
+def readiness():
+    if not getattr(app.state, 'ready', False):
+        return JSONResponse({'status':'not_ready'}, status_code=503)
+    try:
+        get_service().repository.initialize()
+        if config.settings.upload_backend == 'gcs':
+            from services.api.services.object_storage import object_store
+            object_store().check()
+    except Exception:
+        return JSONResponse({'status':'dependency_unavailable'}, status_code=503)
+    return {'status':'ready'}
 
 app.include_router(dataset.router)
 app.include_router(anomalies.router)

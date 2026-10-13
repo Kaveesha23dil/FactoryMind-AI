@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from fastapi import APIRouter, Header, HTTPException, Query
+from fastapi import APIRouter, Header, HTTPException, Query, Request
 
 from services.api.core import config
 from services.api.schemas.evidence import EvidenceListResponse
@@ -132,19 +132,22 @@ def get_evidence(investigation_id: str):
 )
 def process_investigation(
     investigation_id: str,
+    request: Request,
     x_worker_secret: str | None = Header(default=None, alias="X-Worker-Secret"),
 ):
     """Bounded worker entry point (Cloud Tasks compatible, idempotent)."""
     configured = config.settings.worker_secret
-    if not configured:
+    if config.settings.app_env != 'production' and not configured:
         raise HTTPException(
             status_code=403,
             detail="Worker endpoint is disabled (FACTORYMIND_WORKER_SECRET not set)",
         )
-    if x_worker_secret != configured:
+    if config.settings.app_env != 'production' and x_worker_secret != configured:
         raise HTTPException(status_code=401, detail="Invalid worker secret")
     try:
         job = get_service().run_job(investigation_id)
+        if config.settings.job_dispatch == 'tasks' and job['status'] in ('running', 'queued'):
+            raise HTTPException(status_code=503, detail='Job is still claimed by another execution; retry delivery later', headers={'Retry-After':'60'})
     except InvestigationNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     return InvestigationRunResponse(

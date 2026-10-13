@@ -263,7 +263,8 @@ class SqliteIncidentRepository(IncidentRepository):
 
 class IncidentService:
     def __init__(self, repository: IncidentRepository | None = None) -> None:
-        self.repository = repository or SqliteIncidentRepository()
+        from services.api.services.firestore_repository import repository as select_repository
+        self.repository = repository or select_repository('incidents', SqliteIncidentRepository)
         # Ensure the schema exists so the service is usable immediately
         # (idempotent: uses CREATE IF NOT EXISTS).
         self.repository.initialize()

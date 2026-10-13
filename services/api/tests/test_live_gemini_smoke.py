@@ -1,6 +1,6 @@
 """Opt-in smoke test that performs one real Gemini call through ADK.
 
-Skipped unless ``GOOGLE_API_KEY`` is set in the environment. This test never
+Skipped unless ``FACTORYMIND_RUN_LIVE_TESTS=1`` and ``GOOGLE_API_KEY`` are set. This test never
 runs as part of the deterministic suite because it costs tokens and requires
 network access.
 """
@@ -19,8 +19,8 @@ from services.api.agents.orchestrator import Orchestrator
 from services.api.tests.test_agent_orchestration import RecordingReporter, isolated_incident_store, anomaly_ids  # noqa: F401
 
 pytestmark = pytest.mark.skipif(
-    not os.environ.get("GOOGLE_API_KEY"),
-    reason="GOOGLE_API_KEY is not set; live Gemini smoke test skipped",
+    os.environ.get("FACTORYMIND_RUN_LIVE_TESTS") != "1" or not os.environ.get("GOOGLE_API_KEY"),
+    reason="Live Gemini tests require explicit FACTORYMIND_RUN_LIVE_TESTS=1 and credentials",
 )
 
 

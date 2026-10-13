@@ -161,6 +161,9 @@ class Database:
             if "detection_config" not in columns:
                 connection.execute("ALTER TABLE incidents ADD COLUMN detection_config TEXT")
             self._migrate_evidence_primary_key(connection)
+            columns = {row['name'] for row in connection.execute('PRAGMA table_info(investigations)')}
+            if 'prepared_context' not in columns:
+                connection.execute('ALTER TABLE investigations ADD COLUMN prepared_context TEXT')
             connection.commit()
 
     @staticmethod

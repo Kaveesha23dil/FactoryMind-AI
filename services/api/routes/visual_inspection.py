@@ -6,6 +6,8 @@ from typing import Annotated
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
+from fastapi.responses import Response
+from services.api.core import config
 
 from services.api.schemas.visual_evidence import (
     VisualAnalysisRequest,
@@ -44,7 +46,7 @@ def get_service() -> VisualEvidenceService:
     },
 )
 async def upload_image(incident_id: str, file: Annotated[UploadFile, File()]) -> dict:
-    data = await file.read()
+    data = await file.read(config.VISUAL_MAX_IMAGE_BYTES + 1)
     try:
         return get_service().store(
             incident_id,
@@ -88,9 +90,12 @@ def get_image(image_id: str) -> dict:
     "/api/images/{image_id}/content",
     responses={404: {"description": "Resource not found"}},
 )
-def get_image_content(image_id: str) -> FileResponse:
+def get_image_content(image_id: str):
     try:
         service = get_service()
+        if service.get(image_id)['storage_backend'] == 'google_cloud_storage':
+            return Response(service.content_bytes(image_id), media_type=service.content_type(image_id),
+                            headers={'Cache-Control':'private, no-store', 'X-Content-Type-Options':'nosniff'})
         return FileResponse(
             service.content_path(image_id), media_type=service.content_type(image_id)
         )

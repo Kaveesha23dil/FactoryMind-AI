@@ -104,7 +104,8 @@ class InvestigationService:
         incident_service=None,
         runtime_factory: Callable = build_runtime,
     ) -> None:
-        self.repository = repository or SqliteInvestigationRepository()
+        from services.api.services.firestore_repository import repository as select_repository
+        self.repository = repository or select_repository('investigations', SqliteInvestigationRepository)
         self.repository.initialize()
         if incident_service is None:
             from services.api.routes.incidents import get_service
@@ -202,7 +203,12 @@ class InvestigationService:
 
         investigation_id = job["investigation_id"]
         if config.settings.investigation_async:
-            self.enqueue()
+            try:
+                self.enqueue(investigation_id)
+            except Exception as exc:
+                self.repository.update(investigation_id, status='failed', stage='failed',
+                    error='Durable job dispatch failed; review Cloud Tasks configuration before retrying.', completed_at=_utcnow_iso())
+                raise InvestigationDisabledError('Investigation could not be dispatched') from exc
         else:
             # Synchronous mode (local/dev + tests): execute immediately so the
             # caller observes a terminal state without a background thread.
@@ -252,8 +258,11 @@ class InvestigationService:
             raise InvestigationNotFoundError(investigation_id)
         if job["status"] == "completed":
             return job
-        if job["status"] == "running":
+        if job["status"] == "running" and (config.settings.persistence_backend != 'firestore' or job.get('lease_expires_at', float('inf')) > time.time()):
             return job
+        if prepared is None and job.get('prepared_context'):
+            from services.api.agents.orchestrator import PreparedContext
+            prepared = PreparedContext(**job['prepared_context'])
 
         if not self.repository.claim(investigation_id):
             return self.get(investigation_id)
@@ -393,7 +402,11 @@ class InvestigationService:
 
     # -- worker ----------------------------------------------------------
 
-    def enqueue(self) -> None:
+    def enqueue(self, investigation_id=None) -> None:
+        if config.settings.job_dispatch == 'tasks':
+            from services.api.services.task_dispatch import dispatch
+            dispatch(investigation_id)
+            return
         if self._worker is None:
             self._worker = InvestigationWorker(self)
             self._worker.start()

@@ -75,7 +75,8 @@ class VisualEvidenceService:
             investigation_service = get_service()
         self.incident_service = incident_service
         self.investigations = investigation_service
-        self.repository = repository or SqliteVisualEvidenceRepository()
+        from services.api.services.firestore_repository import repository as select_repository
+        self.repository = repository or select_repository('images', SqliteVisualEvidenceRepository)
         self.repository.initialize()
         self.storage_dir = Path(storage_dir or config.settings.visual_storage_dir)
 
@@ -102,12 +103,21 @@ class VisualEvidenceService:
             raise InvalidImageError(f"Unsupported declared type '{mime_type}'.")
         # Trust the sniffed type over the client-supplied content type.
         resolved_mime = detected
+        if config.settings.app_env == 'production':
+            try:
+                image_utils.verify_image(data)
+            except Exception as exc:
+                raise InvalidImageError('Image encoding is invalid or unsafe') from exc
 
         width, height = image_utils.image_dimensions(data)
         image_id = f"{config.VISUAL_IMAGE_ID_PREFIX}{uuid.uuid4().hex[:10].upper()}"
         storage_ref = f"{image_id}{image_utils.extension_for(resolved_mime)}"
-        self.storage_dir.mkdir(parents=True, exist_ok=True)
-        self._path(storage_ref).write_bytes(data)
+        if config.settings.upload_backend == 'gcs':
+            from services.api.services.object_storage import object_store
+            object_store().write(storage_ref, data, resolved_mime)
+        else:
+            self.storage_dir.mkdir(parents=True, exist_ok=True)
+            self._path(storage_ref).write_bytes(data)
 
         now = _utcnow_iso()
         self.repository.insert(
@@ -122,7 +132,7 @@ class VisualEvidenceService:
                 "width": width,
                 "height": height,
                 "provenance": _VISUAL_PROVENANCE,
-                "storage_backend": STORAGE_BACKEND,
+                "storage_backend": 'google_cloud_storage' if config.settings.upload_backend == 'gcs' else STORAGE_BACKEND,
                 "status": "stored",
                 "summary": None,
                 "observations": [],
@@ -141,9 +151,14 @@ class VisualEvidenceService:
         runtime_factory=build_runtime,
     ) -> dict:
         record = self.get(image_id)
-        path = self._path(record["storage_ref"])
-        if not path.exists():
-            raise VisualEvidenceError("Stored image file is missing.")
+        if record['storage_backend'] == 'google_cloud_storage':
+            from services.api.services.object_storage import object_store
+            if not object_store().exists(record['storage_ref']):
+                raise VisualEvidenceError('Stored image object is missing')
+        else:
+            path = self._path(record["storage_ref"])
+            if not path.exists():
+                raise VisualEvidenceError("Stored image file is missing.")
 
         if investigation_id:
             # Validate the investigation exists before we attach anything.
@@ -156,7 +171,7 @@ class VisualEvidenceService:
             retry_at = self.investigations._provider_cooldown()
             if retry_at:
                 raise VisualEvidenceError(f'Gemini quota cooldown is active until {retry_at}.')
-            data = path.read_bytes()
+            data = object_store().read(record['storage_ref']) if record['storage_backend'] == 'google_cloud_storage' else path.read_bytes()
             context = {
                 "incident": get_incident_context(record["incident_id"]),
                 "anomaly": get_anomaly_analysis(record["incident_id"]),
@@ -217,6 +232,11 @@ class VisualEvidenceService:
         if not path.exists():
             raise VisualEvidenceNotFoundError(image_id)
         return path
+
+    def content_bytes(self, image_id):
+        record = self.get(image_id)
+        from services.api.services.object_storage import object_store
+        return object_store().read(record['storage_ref'])
 
     def content_type(self, image_id: str) -> str:
         return self.get(image_id)["mime_type"]

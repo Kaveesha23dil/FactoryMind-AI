@@ -101,7 +101,13 @@ def build_deterministic_evidence(
                 ),
                 "value": float(feature["observed_value"]),
                 "units": unit or None,
-                "provenance": "Dataset feature value recorded when the incident was created.",
+                "provenance": (
+                    "Deterministically derived: torque_nm * 2 * pi * rotational_speed_rpm / 60."
+                    if feature.get('feature') == 'mechanical_power_w' else
+                    "Deterministically derived: process temperature minus air temperature."
+                    if feature.get('feature') == 'temperature_difference_c' else
+                    "Dataset feature value recorded when the incident was created."
+                ),
                 "payload": {
                     "feature": feature.get("feature"),
                     "label": label,
@@ -161,6 +167,7 @@ def build_deterministic_evidence(
                     "document_title": passage["document_title"],
                     "section_id": passage["section_id"],
                     "heading": passage.get("heading", ""),
+                    "source": passage.get("source", {}),
                 },
                 "created_at": created_at,
             }

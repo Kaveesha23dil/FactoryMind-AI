@@ -50,6 +50,7 @@ class CriticReview(BaseModel):
     alternative_explanations: list[str] = Field(default_factory=list)
     missing_evidence: list[str] = Field(default_factory=list)
     citation_issues: list[str] = Field(default_factory=list)
+    citation_reviews: list[dict[str, Any]] = Field(default_factory=list)
     revision_required: bool = False
     deterministic_findings: list[str] = Field(
         default_factory=list,
@@ -88,6 +89,12 @@ class InvestigationReport(BaseModel):
     recommended_actions: list[RecommendedAction] = Field(default_factory=list)
     agent_activity: list[AgentActivity] = Field(default_factory=list)
     evidence_catalog: list[str] = Field(default_factory=list)
+    cache_key: str | None = None
+    cache_evidence_digest: str | None = None
+    cache_report_digest: str | None = None
+    usage: list[dict[str, Any]] = Field(default_factory=list)
+    sensor_analysis: dict[str, Any] = Field(default_factory=dict)
+    knowledge_analysis: dict[str, Any] = Field(default_factory=dict)
     rejected_citations: list[str] = Field(default_factory=list)
     revision_count: int = 0
     counterfactual: dict[str, Any] | None = Field(
@@ -108,6 +115,7 @@ class InvestigationJob(BaseModel):
     model: str
     summary: str | None = None
     error: str | None = None
+    retry_available_at: str | None = None
     attempt_count: int = 0
     created_at: str
     started_at: str | None = None
@@ -126,6 +134,7 @@ class InvestigationStartResponse(BaseModel):
     status: InvestigationStatus
     stage: str
     created_at: str
+    reused: bool = False
 
 
 class InvestigationListItem(BaseModel):

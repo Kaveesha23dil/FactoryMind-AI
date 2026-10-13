@@ -8,6 +8,8 @@ id, and exact text so citations can be validated later.
 from __future__ import annotations
 
 from typing import Any
+from functools import lru_cache
+from copy import deepcopy
 
 from services.api.services.knowledge_repository import (
     get_knowledge_repository,
@@ -17,6 +19,11 @@ from services.api.services.knowledge_repository import (
 def retrieve_knowledge(query: str, top_k: int = 5) -> list[dict[str, Any]]:
     """Retrieve the most relevant maintenance passages for a query."""
     repo = get_knowledge_repository()
+    return deepcopy(_search(repo, query, top_k))
+
+
+@lru_cache(maxsize=128)
+def _search(repo, query, top_k):
     return [passage.to_dict() for passage in repo.search(query, top_k=top_k)]
 
 

@@ -309,3 +309,102 @@ def test_provider_failure_raises_investigation_error():
 
 def _activity_agents(report: dict) -> set[str]:
     return {entry["agent"] for entry in report["agent_activity"]}
+
+
+@pytest.mark.parametrize('message,expected', [
+    ('503 UNAVAILABLE high demand', True), ('429 RESOURCE_EXHAUSTED', True),
+    ('500 INTERNAL', True), ('403 PERMISSION_DENIED', False),
+    ('400 INVALID_ARGUMENT', False), ('No structured output', False),
+])
+def test_provider_error_retry_classification(message, expected):
+    assert InvestigationProviderError(message).retryable is expected
+
+
+def test_transient_provider_retry_recovers_with_backoff(monkeypatch):
+    delays = []
+    async def sleep(delay):
+        delays.append(delay)
+    monkeypatch.setattr('services.api.agents.orchestrator.asyncio.sleep', sleep)
+    class Runtime:
+        calls = 0
+        async def run(self, spec, prompt):
+            self.calls += 1
+            if self.calls < 3:
+                raise InvestigationProviderError('503 UNAVAILABLE')
+            return {'ok': True}
+    runtime = Runtime()
+    orchestrator = Orchestrator(runtime, None, max_retries=3)
+    assert asyncio.run(orchestrator._run_agent(_dummy_spec(), {})) == {'ok': True}
+    assert runtime.calls == 3
+    assert 5 <= delays[0] <= 6 and 10 <= delays[1] <= 11
+
+
+def test_transient_retry_exhaustion_is_bounded(monkeypatch):
+    async def sleep(delay):
+        pass
+    monkeypatch.setattr('services.api.agents.orchestrator.asyncio.sleep', sleep)
+    class Runtime:
+        calls = 0
+        async def run(self, spec, prompt):
+            self.calls += 1
+            raise InvestigationProviderError('503 UNAVAILABLE')
+    runtime = Runtime()
+    orchestrator = Orchestrator(runtime, None, max_retries=3)
+    with pytest.raises(InvestigationError, match='503'):
+        asyncio.run(orchestrator._run_agent(_dummy_spec(), {}))
+    assert runtime.calls == 4
+
+
+def test_permanent_error_is_not_retried():
+    class Runtime:
+        calls = 0
+        async def run(self, spec, prompt):
+            self.calls += 1
+            raise InvestigationProviderError('403 PERMISSION_DENIED')
+    runtime = Runtime()
+    with pytest.raises(InvestigationError, match='403'):
+        asyncio.run(Orchestrator(runtime, None, max_retries=3)._run_agent(_dummy_spec(), {}))
+    assert runtime.calls == 1
+
+
+@pytest.mark.parametrize('message,delay,retryable', [
+    ("429 RESOURCE_EXHAUSTED {'retryDelay': '42136s'}", 42136, False),
+    ('429 RESOURCE_EXHAUSTED GenerateRequestsPerDayPerProjectPerModel-FreeTier', None, False),
+    ("429 RESOURCE_EXHAUSTED {'retryDelay': '12s'}", 12, True),
+    ('503 UNAVAILABLE', None, True),
+])
+def test_quota_delay_classification(message, delay, retryable):
+    error = InvestigationProviderError(message)
+    assert error.retry_after_seconds == delay
+    assert error.retryable is retryable
+
+
+def test_daily_quota_is_not_retried():
+    class Runtime:
+        calls = 0
+        async def run(self, spec, prompt):
+            self.calls += 1
+            raise InvestigationProviderError("429 RESOURCE_EXHAUSTED {'retryDelay': '42136s'}")
+    runtime = Runtime()
+    with pytest.raises(InvestigationError, match='429'):
+        asyncio.run(Orchestrator(runtime, None, max_retries=3)._run_agent(_dummy_spec(), {}))
+    assert runtime.calls == 1
+
+
+def test_provider_error_closes_runner_stream(monkeypatch):
+    from types import SimpleNamespace
+    from services.api.agents import runtime as runtime_module
+    closed = []
+    class Runner:
+        def __init__(self, **kwargs):
+            pass
+        async def run_async(self, **kwargs):
+            try:
+                yield SimpleNamespace(error_message='429 RESOURCE_EXHAUSTED')
+            finally:
+                closed.append(True)
+    monkeypatch.setattr(runtime_module, 'Runner', Runner)
+    runtime = AdkRuntime('scripted', 'scripted', default_scripted_responses())
+    with pytest.raises(InvestigationProviderError, match='429'):
+        asyncio.run(runtime.run(sensor_agent.SPEC, 'Test'))
+    assert closed == [True]

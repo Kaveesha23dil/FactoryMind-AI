@@ -25,7 +25,8 @@ export default function RootLayout({ children }: Readonly<LayoutProps<"/">>) {
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full">{children}</body>
+      {/* Grammarly injects attributes here before hydration; the escape hatch is local to this element. */}
+      <body className="min-h-full" suppressHydrationWarning>{children}</body>
     </html>
   );
 }

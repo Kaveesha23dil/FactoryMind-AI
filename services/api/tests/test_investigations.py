@@ -19,6 +19,7 @@ from services.api.services.incident_service import (
 from services.api.services.investigation_repository import SqliteInvestigationRepository
 from services.api.services.investigation_service import (
     DuplicateInvestigationError,
+    InvestigationDisabledError,
     InvestigationService,
 )
 from services.api.tests.conftest import (
@@ -309,6 +310,35 @@ def test_failed_job_is_persisted(client, investigation_env, anomaly_ids, monkeyp
     assert job["status"] == "failed"
     assert job["error"]
     assert job["report"] is None
+
+
+def test_quota_cooldown_survives_restart_and_blocks_new_jobs(client, investigation_env, anomaly_ids):
+    from datetime import datetime, timezone
+    incident_id = _create_incident(client, anomaly_ids[0])
+    job = _queued_job('INV-QUOTA', incident_id)
+    job.update(status='failed', completed_at=datetime.now(timezone.utc).isoformat(),
+               error="429 RESOURCE_EXHAUSTED {'retryDelay': '42136s'}")
+    investigation_env.repository.insert(job)
+    restarted = InvestigationService(repository=SqliteInvestigationRepository(
+        Database(investigation_env.repository.database.path)), incident_service=investigation_env.incident_service)
+    assert restarted.get('INV-QUOTA')['retry_available_at']
+    before = restarted.repository.list_all(100, 0, None)[0]
+    with pytest.raises(InvestigationDisabledError, match='quota cooldown'):
+        restarted.start_investigation(incident_id)
+    assert restarted.repository.list_all(100, 0, None)[0] == before
+    response = client.post(f'/api/incidents/{incident_id}/investigate')
+    assert response.status_code == 503 and 'quota cooldown' in response.json()['detail']
+
+
+def test_expired_quota_cooldown_allows_new_jobs(investigation_env, anomaly_ids):
+    from datetime import datetime, timezone, timedelta
+    incident_id = _create_incident_service(investigation_env, anomaly_ids[0])
+    job = _queued_job('INV-EXPIRED-QUOTA', incident_id)
+    job.update(status='failed', completed_at=(datetime.now(timezone.utc)-timedelta(days=2)).isoformat(),
+               error="429 RESOURCE_EXHAUSTED {'retryDelay': '42136s'}")
+    investigation_env.repository.insert(job)
+    assert investigation_env._provider_cooldown() is None
+    assert investigation_env.start_investigation(incident_id)['status'] == 'completed'
 
 
 def _create_incident_service(service: InvestigationService, record_id: int) -> str:

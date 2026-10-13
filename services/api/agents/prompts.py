@@ -12,12 +12,18 @@ from typing import Any, Iterable
 
 def format_evidence_catalog(records: Iterable[dict[str, Any]]) -> str:
     lines = []
+    provenance = {}
     for record in records:
+        origin = record.get('provenance', 'not supplied')
+        if origin not in provenance:
+            provenance[origin] = f'P{len(provenance) + 1}'
         lines.append(
             f"- {record['evidence_id']} [{record['evidence_type']}] "
             f"source={record['source']} :: {record['observation']}"
+            f" provenance={provenance[origin]}"
         )
-    return "\n".join(lines) if lines else "(no evidence)"
+    origins = [f'{identifier}: {origin}' for origin, identifier in provenance.items()]
+    return '\n'.join(['Provenance registry:', *origins, *lines]) if lines else '(no evidence)'
 
 
 def format_measurements(measurements: dict[str, Any]) -> str:
@@ -59,7 +65,8 @@ def format_knowledge(passages: Iterable[dict[str, Any]]) -> str:
     lines = []
     for passage in passages:
         lines.append(
-            f"- {passage['document_id']} / {passage['section_id']} "
+            f"- {passage.get('evidence_id', '(no citable evidence ID)')} "
+            f"{passage['document_id']} / {passage['section_id']} "
             f"({passage['document_title']} - {passage.get('heading', '')}):\n"
             f"  \"{passage['text']}\""
         )

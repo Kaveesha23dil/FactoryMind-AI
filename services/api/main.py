@@ -11,8 +11,6 @@ authenticated or hardened for public deployment.
 from __future__ import annotations
 
 import logging
-import json
-from datetime import datetime, timezone
 import time
 from contextlib import asynccontextmanager
 
@@ -33,26 +31,9 @@ from services.api.routes import (
 from services.api.services.anomaly_engine import get_engine
 from services.api.routes.incidents import get_service
 from services.api.routes.investigations import get_service as get_investigation_service
+from services.api.core.logging import JsonLogFormatter, configure_logging
 
-class JsonLogFormatter(logging.Formatter):
-    def format(self, record):
-        entry = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "level": record.levelname,
-            "logger": record.name,
-            "message": record.getMessage(),
-        }
-        if record.exc_info:
-            entry["exception"] = self.formatException(record.exc_info)
-        return json.dumps(entry)
-
-
-log_handler = logging.StreamHandler()
-log_handler.setFormatter(JsonLogFormatter())
-logging.basicConfig(
-    level=getattr(logging, config.settings.log_level.upper(), logging.INFO),
-    handlers=[log_handler],
-)
+configure_logging()
 logger = logging.getLogger("factorymind.api")
 
 

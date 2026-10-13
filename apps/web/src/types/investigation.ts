@@ -56,6 +56,13 @@ export interface CriticReview {
   alternative_explanations: string[];
   missing_evidence: string[];
   citation_issues: string[];
+  citation_reviews?: Array<{
+    hypothesis_id: string;
+    evidence_id: string;
+    relationship: "supporting" | "contradicting";
+    valid: boolean;
+    reason: string;
+  }>;
   revision_required: boolean;
   deterministic_findings: string[];
   excluded_evidence_reused: string[];
@@ -89,6 +96,17 @@ export interface InvestigationReport {
   recommended_actions: RecommendedAction[];
   agent_activity: AgentActivity[];
   evidence_catalog: string[];
+  sensor_analysis?: {
+    summary?: string;
+    findings?: Array<{ feature: string; observation: string; evidence_ids: string[] }>;
+    missing_measurements?: string[];
+    referenced_evidence_ids?: string[];
+  };
+  knowledge_analysis?: {
+    summary?: string;
+    guidance?: Array<{ symptom: string; guidance: string; evidence_ids: string[] }>;
+    referenced_evidence_ids?: string[];
+  };
   rejected_citations: string[];
   revision_count: number;
   counterfactual: CounterfactualMeta | null;
@@ -104,6 +122,7 @@ export interface InvestigationJob {
   model: string;
   summary: string | null;
   error: string | null;
+  retry_available_at?: string | null;
   attempt_count: number;
   created_at: string;
   started_at: string | null;
@@ -167,4 +186,5 @@ export interface InvestigationStartResponse {
   status: InvestigationStatus;
   stage: string;
   created_at: string;
+  reused?: boolean;
 }

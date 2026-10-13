@@ -13,6 +13,8 @@ from pathlib import Path
 from services.api.core import config
 
 SCHEMA_STATEMENTS = [
+    'CREATE TABLE IF NOT EXISTS gemini_request_leases (token TEXT PRIMARY KEY, expires_at REAL NOT NULL)',
+    'CREATE TABLE IF NOT EXISTS gemini_provider_cooldowns (model TEXT PRIMARY KEY, category TEXT NOT NULL, expires_at REAL NOT NULL)',
     """
     CREATE TABLE IF NOT EXISTS incidents (
         incident_id TEXT PRIMARY KEY,

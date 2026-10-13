@@ -48,9 +48,9 @@ def get_service() -> InvestigationService:
         503: {"description": "Investigation unavailable"},
     },
 )
-def start_investigation(incident_id: str):
+def start_investigation(incident_id: str, force_rerun: bool = Query(False)):
     try:
-        job = get_service().start_investigation(incident_id)
+        job = get_service().start_investigation(incident_id, force_rerun=force_rerun)
     except IncidentNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except InvestigationDisabledError as exc:
@@ -69,6 +69,7 @@ def start_investigation(incident_id: str):
         status=job["status"],
         stage=job["stage"],
         created_at=job["created_at"],
+        reused=job.get('cache_reused', False),
     )
 
 

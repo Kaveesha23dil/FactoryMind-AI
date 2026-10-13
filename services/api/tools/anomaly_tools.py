@@ -51,7 +51,9 @@ def get_baseline_statistics(machine_type: str) -> dict[str, Any]:
         for group, values in detector.group_baselines.items()
     }
     scope = "machine_type" if machine_type in group_baselines else "global"
-    baselines = group_baselines.get(machine_type, global_baselines)
+    # Match the detector's per-feature fallback, including degenerate groups.
+    baselines = {key: detector._baseline_for(machine_type, key).to_dict()
+                 for key in detector.feature_keys}
     return {
         "machine_type": machine_type,
         "scope": scope,

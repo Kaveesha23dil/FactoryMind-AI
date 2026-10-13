@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -16,7 +17,7 @@ import {
   ShieldAlert,
   XCircle,
 } from "lucide-react";
-import { getInvestigation, getInvestigationEvidence } from "@/lib/api";
+import { getInvestigation, getInvestigationEvidence, startInvestigation } from "@/lib/api";
 import type {
   AgentActivity,
   EvidenceListResponse,
@@ -82,6 +83,10 @@ interface InvestigationWorkspaceProps {
 export default function InvestigationWorkspace({
   investigationId,
 }: Readonly<InvestigationWorkspaceProps>) {
+  const router = useRouter();
+  const [retrying, setRetrying] = useState(false);
+  const [retryError, setRetryError] = useState<string | null>(null);
+  const [checkedAt, setCheckedAt] = useState(0);
   const [job, setJob] = useState<InvestigationJob | null>(null);
   const [evidence, setEvidence] = useState<EvidenceListResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -99,6 +104,7 @@ export default function InvestigationWorkspace({
           getInvestigationEvidence(investigationId),
         ]);
         if (stale) return;
+        setCheckedAt(Date.now());
         setJob(nextJob);
         setEvidence(nextEvidence);
         setError(null);
@@ -128,6 +134,9 @@ export default function InvestigationWorkspace({
   }, [investigationId, tick]);
   const report = job?.report ?? null;
   const active = job ? !isTerminalInvestigation(job.status) : false;
+  const quotaFailure = /429|RESOURCE_EXHAUSTED|quota cooldown/i.test(job?.error ?? "");
+  const quotaCooldown = quotaFailure && Boolean(job?.retry_available_at && Date.parse(job.retry_available_at) > checkedAt);
+  const retryLabel = retrying ? "Starting investigation…" : "Retry investigation";
   const evidenceById = useMemo(() => {
     const map = new Map<
       string,
@@ -147,6 +156,19 @@ export default function InvestigationWorkspace({
   const refresh = () => {
     setRefreshing(true);
     setTick((value) => value + 1);
+  };
+  const retryInvestigation = async () => {
+    if (!job || retrying) return;
+    setRetrying(true);
+    setRetryError(null);
+    try {
+      const next = await startInvestigation(job.incident_id, true);
+      router.push(`/investigations/${next.investigation_id}`);
+      setRetrying(false);
+    } catch (err) {
+      setRetryError(err instanceof Error ? err.message : "Could not start another investigation.");
+      setRetrying(false);
+    }
   };
   return (
     <div className="flex min-h-screen flex-col">
@@ -258,19 +280,32 @@ export default function InvestigationWorkspace({
                       />
                       <div>
                         <p className="font-medium">
-                          The investigation failed after attempt{" "}
+                          The investigation stopped after job attempt{" "}
                           {job.attempt_count}.
                         </p>
                         {job.error && (
-                          <p className="mt-0.5 break-words">{job.error}</p>
+                          <>
+                            {quotaFailure && <p className="mt-2">Gemini’s request quota is exhausted. {job.retry_available_at ? `The reported retry window is approximately ${formatDateTime(job.retry_available_at)}.` : "Check your project quota in Google AI Studio before retrying."} Short retries cannot restore daily quota. <a className="underline" href="https://aistudio.google.com/usage" target="_blank" rel="noreferrer">Review API usage and billing</a>.</p>}
+                            {/503|UNAVAILABLE/.test(job.error) && <p className="mt-2">Gemini is temporarily unavailable. No verified report was produced. You can start another investigation when capacity returns.</p>}
+                            <details className="mt-2"><summary className="cursor-pointer">Technical error details</summary><p className="mt-0.5 break-words">{job.error}</p></details>
+                          </>
                         )}
+                        <button type="button" onClick={() => void retryInvestigation()} disabled={retrying || quotaCooldown} className="mt-3 rounded-md border border-line px-3 py-2 font-medium text-slate-200 disabled:opacity-50">
+                          {quotaCooldown ? "Waiting for quota reset" : retryLabel}
+                        </button>
+                        {retryError && <p role="alert" className="mt-2">{retryError}</p>}
                       </div>
                     </div>
                   )}
                 </header>
 
-                <AgentTimeline activities={job.agent_activity} />
-                <StageHistory job={job} />
+                {job.status === "completed" && <div className="text-xs text-slate-400">Unchanged investigations reuse their existing verified report. <button type="button" onClick={() => void retryInvestigation()} disabled={retrying} className="ml-2 rounded border border-line px-3 py-2 text-slate-200 disabled:opacity-50">{retrying ? "Starting…" : "Rerun with Gemini"}</button>{retryError && <p role="alert" className="mt-2">{retryError}</p>}</div>}
+
+                <details className="space-y-3" open={active}>
+                  <summary className="cursor-pointer text-xs text-slate-300">Detailed agent analysis and pipeline stages</summary>
+                  <AgentTimeline activities={job.agent_activity} evidence={evidence} validatedCounts={Boolean(report?.knowledge_analysis?.referenced_evidence_ids)} />
+                  <StageHistory job={job} />
+                </details>
 
                 <WorkspaceTabs tab={tab} onChange={setTab} />
 
@@ -368,8 +403,12 @@ function WorkspaceTabs({
 }
 function AgentTimeline({
   activities,
+  evidence,
+  validatedCounts,
 }: Readonly<{
   activities: AgentActivity[];
+  evidence: EvidenceListResponse | null;
+  validatedCounts: boolean;
 }>) {
   const ordered = [...activities].sort((a, b) => {
     const ai = AGENT_ORDER.indexOf(a.agent as (typeof AGENT_ORDER)[number]);
@@ -438,7 +477,13 @@ function AgentTimeline({
                       activity.evidence_count !== null &&
                       activity.evidence_count !== undefined
                     ) {
-                      return `${activity.evidence_count} evidence`;
+                      if (activity.agent === "knowledge_agent") {
+                        const stored = evidence?.items.filter((item) => item.evidence_type === "manual_passage").length;
+                        return `${stored ?? "…"} stored passages · ${activity.evidence_count} ${validatedCounts ? "validated" : "reported"} citations`;
+                      }
+                      if (activity.agent === "investigation_agent") return `${activity.evidence_count} hypotheses`;
+                      if (activity.agent === "critic_agent") return `${activity.evidence_count} review issues`;
+                      return `${activity.evidence_count} ${validatedCounts ? "validated" : "reported"} citations`;
                     }
                     return activity.completed_at
                       ? formatDateTime(activity.completed_at)
@@ -509,6 +554,13 @@ interface ReportViewProps {
   >;
 }
 function ReportView({ report, evidenceById }: Readonly<ReportViewProps>) {
+  const primary = report.hypotheses.find((item) => item.assessment === "plausible" && item.supporting_evidence_ids.length > 0);
+  const missing = [...new Set([
+    ...(report.sensor_analysis?.missing_measurements ?? []),
+    ...report.critic_review.missing_evidence,
+    ...report.hypotheses.flatMap((item) => item.missing_evidence),
+    ...report.critic_review.deterministic_findings.filter((item) => item.startsWith("Missing evidence:")),
+  ])];
   return (
     <section className="space-y-6" aria-label="Investigation report">
       {report.counterfactual && (
@@ -542,7 +594,7 @@ function ReportView({ report, evidenceById }: Readonly<ReportViewProps>) {
       )}
       <div className="rounded-lg border border-line bg-surface px-5 py-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-sm font-semibold text-white">Findings</h2>
+          <h2 className="text-sm font-semibold text-white">Primary finding</h2>
           <p className="text-[11px] text-slate-500 tabular-nums">
             Drafted {formatDateTime(report.generated_at)} ·{" "}
             {formatRevisionCount(report.revision_count)}
@@ -551,6 +603,18 @@ function ReportView({ report, evidenceById }: Readonly<ReportViewProps>) {
         <p className="mt-2 max-w-3xl text-xs leading-relaxed text-slate-300">
           {report.summary}
         </p>
+        <p className="mt-3 text-xs font-medium text-slate-200">
+          {report.critic_review.revision_required
+            ? "Review unresolved issues before accepting a primary explanation."
+            : primary?.title ?? "No supported primary explanation is available."}
+        </p>
+        <ReviewList title="Key evidence" items={(primary?.supporting_evidence_ids ?? []).flatMap((id) => {
+          const item = evidenceById.get(id);
+          return item ? [`${id} · ${item.observation} Source: ${item.source}`] : [];
+        })} />
+        {!primary && <p className="mt-3 text-xs text-slate-400">Key evidence: no validated primary hypothesis is available. Review the stored evidence and alternative hypotheses below.</p>}
+        <ReviewList title="Alternative hypotheses" items={report.hypotheses.filter((item) => item !== primary).map((item) => `${item.title} (${item.assessment})`)} />
+        <ReviewList title="Missing evidence" items={missing} />
 
         <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
           <CriticPanel report={report} />
@@ -559,6 +623,15 @@ function ReportView({ report, evidenceById }: Readonly<ReportViewProps>) {
       </div>
 
       <HypothesesSection report={report} evidenceById={evidenceById} />
+      {(report.sensor_analysis?.summary || report.knowledge_analysis?.summary) && (
+        <details className="rounded-lg border border-line bg-surface p-5">
+          <summary className="cursor-pointer text-xs font-semibold text-white">Detailed sensor and knowledge analysis</summary>
+          <p className="mt-3 text-xs text-slate-300">{report.sensor_analysis?.summary}</p>
+          <ReviewList title="Sensor observations" items={(report.sensor_analysis?.findings ?? []).map((item) => `${item.feature}: ${item.observation} (${item.evidence_ids.join(", ")})`)} />
+          <p className="mt-3 text-xs text-slate-300">{report.knowledge_analysis?.summary}</p>
+          <ReviewList title="Document guidance" items={(report.knowledge_analysis?.guidance ?? []).map((item) => `${item.symptom}: ${item.guidance} (${item.evidence_ids.join(", ")})`)} />
+        </details>
+      )}
 
       {report.rejected_citations.length > 0 && (
         <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/5 px-4 py-3 text-xs text-warning">
@@ -568,7 +641,7 @@ function ReportView({ report, evidenceById }: Readonly<ReportViewProps>) {
           />
           <div>
             <p className="font-medium">
-              {report.rejected_citations.length} knowledge-base citation
+              {report.rejected_citations.length} evidence citation
               {report.rejected_citations.length > 1 ? "s were" : " was"}{" "}
               rejected.
             </p>
@@ -615,6 +688,9 @@ function CriticPanel({
         title="Unsupported claims"
         items={review.unsupported_claims}
       />
+      <ReviewList title="Contradictions" items={review.contradictions} />
+      <ReviewList title="Missing evidence" items={review.missing_evidence} />
+      <ReviewList title="Citation issues" items={review.citation_issues} />
       <ReviewList
         title="Alternative explanations"
         items={review.alternative_explanations}
@@ -694,7 +770,7 @@ function RecommendedActionsPanel({
           aria-hidden="true"
         />
         <h3 className="text-xs font-semibold text-white">
-          Recommended actions
+          Recommended verification checks
         </h3>
       </div>
       <ol className="mt-3 space-y-2">

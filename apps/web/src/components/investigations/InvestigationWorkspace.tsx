@@ -29,6 +29,7 @@ import { CardSkeleton, EmptyState, ErrorState } from "@/components/ui/Feedback";
 import EvidenceGraphView from "@/components/investigations/EvidenceGraphView";
 import CounterfactualPanel from "@/components/investigations/CounterfactualPanel";
 import VisualInspectionPanel from "@/components/investigations/VisualInspectionPanel";
+import InspectionDraft from "@/components/investigations/InspectionDraft";
 import {
   AGENT_ORDER,
   AGENT_STATUS_LABELS,
@@ -554,7 +555,8 @@ interface ReportViewProps {
   >;
 }
 function ReportView({ report, evidenceById }: Readonly<ReportViewProps>) {
-  const primary = report.hypotheses.find((item) => item.assessment === "plausible" && item.supporting_evidence_ids.length > 0);
+  const primary = report.hypotheses.find((item) => item.assessment === "plausible" && item.supporting_evidence_ids.length > 0 && item.supporting_evidence_ids.every(id => evidenceById.has(id)));
+  const reviewNeeded = report.critic_review.revision_required || [report.critic_review.issues_found, report.critic_review.unsupported_claims, report.critic_review.contradictions, report.critic_review.citation_issues].some(items => items.length > 0);
   const missing = [...new Set([
     ...(report.sensor_analysis?.missing_measurements ?? []),
     ...report.critic_review.missing_evidence,
@@ -604,7 +606,7 @@ function ReportView({ report, evidenceById }: Readonly<ReportViewProps>) {
           {report.summary}
         </p>
         <p className="mt-3 text-xs font-medium text-slate-200">
-          {report.critic_review.revision_required
+          {reviewNeeded
             ? "Review unresolved issues before accepting a primary explanation."
             : primary?.title ?? "No supported primary explanation is available."}
         </p>
@@ -613,6 +615,11 @@ function ReportView({ report, evidenceById }: Readonly<ReportViewProps>) {
           return item ? [`${id} · ${item.observation} Source: ${item.source}`] : [];
         })} />
         {!primary && <p className="mt-3 text-xs text-slate-400">Key evidence: no validated primary hypothesis is available. Review the stored evidence and alternative hypotheses below.</p>}
+        <ReviewList title="Contradicting observations" items={(primary?.contradicting_evidence_ids ?? []).map(id => {
+          const item = evidenceById.get(id);
+          return item ? `${id} · ${item.observation} Source: ${item.source}` : `${id} · Missing stored evidence; do not accept this citation.`;
+        })} />
+        {!report.critic_review.citation_reviews?.length && <p className="mt-3 text-xs text-warning">Historical report: relationship-level citation validation was not recorded. Resolve the critic concerns before accepting a conclusion.</p>}
         <ReviewList title="Alternative hypotheses" items={report.hypotheses.filter((item) => item !== primary).map((item) => `${item.title} (${item.assessment})`)} />
         <ReviewList title="Missing evidence" items={missing} />
 
@@ -620,6 +627,7 @@ function ReportView({ report, evidenceById }: Readonly<ReportViewProps>) {
           <CriticPanel report={report} />
           <RecommendedActionsPanel report={report} />
         </div>
+        <InspectionDraft report={report} />
       </div>
 
       <HypothesesSection report={report} evidenceById={evidenceById} />

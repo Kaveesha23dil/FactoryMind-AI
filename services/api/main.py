@@ -34,6 +34,7 @@ from services.api.routes.investigations import get_service as get_investigation_
 from services.api.core.logging import JsonLogFormatter, configure_logging
 from services.api.core.production import validate_configuration
 from services.api.core.security import authorize
+from services.api.routes import submission
 
 configure_logging()
 logger = logging.getLogger("factorymind.api")
@@ -110,6 +111,7 @@ app.include_router(investigations.router)
 app.include_router(evidence_graph.router)
 app.include_router(counterfactuals.router)
 app.include_router(visual_inspection.router)
+app.include_router(submission.router)
 
 
 @app.exception_handler(Exception)

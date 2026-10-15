@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import { allowedBackendPath, configuredBackend, trustedWriteOrigin, boundedBody } from "../src/lib/backendProxyPolicy.ts";
 
 test("proxy blocks worker routes and traversal", () => {
+  assert.ok(allowedBackendPath(["health"]));
+  assert.equal(allowedBackendPath(["health", "process"]), false);
   assert.ok(allowedBackendPath(["api", "incidents", "INC-123"]));
   for (const path of [["api", "investigations", "INV-123", "process"], ["api", ".."], ["api", "images%2F.."], ["http:", "evil"]]) {
     assert.equal(allowedBackendPath(path), false);

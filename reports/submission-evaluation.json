@@ -1,0 +1,111 @@
+{
+  "dataset_sha256": "dc6630cd9b1f0f853922fad78a1b6436570d3f1ec863f1dd5c4340ac56bc8a8e",
+  "knowledge_sha256": "60320e4ba17bd71f7e25fd14b1e8f29826cbb803fddfbf0cee0f9b5a2e821f80",
+  "anomaly_evaluation": {
+    "algorithm": "robust_zscore_v1",
+    "split": {
+      "seed": 42,
+      "generator": "numpy.default_rng/PCG64",
+      "train_count": 6000,
+      "validation_count": 2000,
+      "test_count": 2000,
+      "baseline_fit_on": "train",
+      "threshold_selected_on": "validation"
+    },
+    "thresholds": {
+      "configured": 4.0,
+      "validation_tuned": 3.3685
+    },
+    "test_metrics_at_configured_threshold": {
+      "confusion_matrix": {
+        "true_positive": 20,
+        "true_negative": 1846,
+        "false_positive": 98,
+        "false_negative": 36
+      },
+      "precision": 0.1695,
+      "recall": 0.3571,
+      "f1_score": 0.2299,
+      "false_positive_rate": 0.0504,
+      "accuracy": 0.933,
+      "support": 2000
+    },
+    "test_metrics_at_validation_tuned_threshold": {
+      "confusion_matrix": {
+        "true_positive": 26,
+        "true_negative": 1745,
+        "false_positive": 199,
+        "false_negative": 30
+      },
+      "precision": 0.1156,
+      "recall": 0.4643,
+      "f1_score": 0.1851,
+      "false_positive_rate": 0.1024,
+      "accuracy": 0.8855,
+      "support": 2000
+    },
+    "test_class_balance": {
+      "positive_failures": 56,
+      "negative_failures": 1944,
+      "failure_rate": 0.028
+    },
+    "notes": [
+      "Anomaly detection flags unusual observations; it is not a calibrated failure probability.",
+      "The detector never consumes ground-truth failure labels; they are used only here, for evaluation.",
+      "The AI4I dataset is synthetic and strongly imbalanced, so precision/recall are sensitive to the chosen threshold.",
+      "Thresholds are tuned on the validation split only; the test split is used once, for reporting."
+    ],
+    "ground_truth_used_for_detection": false
+  },
+  "saved_runs": {
+    "job_statuses": {
+      "failed": 9,
+      "completed": 1
+    },
+    "failed_categories": {
+      "unavailable": 2,
+      "other": 3,
+      "quota": 3,
+      "timeout": 1
+    },
+    "completed_google_reports": [
+      {
+        "investigation_id": "INV-D944C855CC",
+        "stored_evidence": 21,
+        "citation_links": 23,
+        "resolved_citation_links": 23,
+        "invalid_evidence_ids": [],
+        "source_issues": [],
+        "catalog_matches_storage": true,
+        "relationship_reviews_available": false,
+        "critic_attention_required": true,
+        "duration_seconds": 58.757468,
+        "scope": "ID resolution and stored source checks; not proof of semantic entailment or physical root cause."
+      }
+    ],
+    "citation_id_resolution": {
+      "resolved": 23,
+      "total": 23,
+      "rate": 1.0,
+      "limitation": "Structural ID resolution, not semantic citation accuracy. Source mismatches and critic issues are reported separately."
+    },
+    "saved_counterfactuals": {
+      "samples": 0,
+      "scenarios": [],
+      "leakage_scenario_rate": null,
+      "scope": "Stored/cited explicit and dependency-closed evidence IDs; does not prove absence of paraphrased leakage."
+    },
+    "latency_seconds": {
+      "samples": 1,
+      "mean": 58.757468,
+      "values": [
+        58.757468
+      ],
+      "scope": "Stored completed Google-provider job start-to-completion durations; not a benchmark of current live capacity."
+    },
+    "root_cause_top1_top3": {
+      "result": null,
+      "reason": "No independent machine-specific root-cause labels. AI4I failure flags are not hypothesis-ranking ground truth."
+    }
+  }
+}

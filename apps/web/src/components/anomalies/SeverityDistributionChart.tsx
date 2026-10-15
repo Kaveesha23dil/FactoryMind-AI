@@ -1,6 +1,7 @@
 "use client";
 import {
   Bar,
+  matchByDataKey,
   BarChart,
   CartesianGrid,
   Cell,
@@ -16,19 +17,23 @@ import {
   SEVERITY_ORDER,
 } from "@/lib/severity";
 import { formatNumber } from "@/lib/format";
+import ChartViewport from "@/components/charts/ChartViewport";
+import { barAnimation } from "@/components/charts/chartAnimation";
+import { useChartData } from "@/components/charts/useChartMotion";
+const matchBars = matchByDataKey("severity");
 interface SeverityDistributionChartProps {
   distribution: Record<Severity, number>;
 }
 export default function SeverityDistributionChart({
   distribution,
 }: Readonly<SeverityDistributionChartProps>) {
-  const data = SEVERITY_ORDER.map((severity) => ({
+  const data = useChartData(SEVERITY_ORDER.map((severity) => ({
     severity,
     label: SEVERITY_LABELS[severity],
     count: distribution[severity] ?? 0,
-  }));
+  })));
   return (
-    <div className="h-64 w-full">
+    <ChartViewport className="h-64 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
           data={data}
@@ -63,6 +68,8 @@ export default function SeverityDistributionChart({
             }}
           />
           <Tooltip
+            wrapperClassName="fm-chart-tooltip"
+            animationDuration={140}
             cursor={{ fill: "rgba(148, 163, 184, 0.08)" }}
             contentStyle={{
               background: "#ffffff",
@@ -77,7 +84,7 @@ export default function SeverityDistributionChart({
               "Count",
             ]}
           />
-          <Bar dataKey="count" radius={[4, 4, 0, 0]} isAnimationActive={false}>
+          <Bar dataKey="count" radius={[4, 4, 0, 0]} {...barAnimation(data.length)} animationMatchBy={matchBars}>
             {data.map((entry) => (
               <Cell
                 key={entry.severity}
@@ -87,6 +94,6 @@ export default function SeverityDistributionChart({
           </Bar>
         </BarChart>
       </ResponsiveContainer>
-    </div>
+    </ChartViewport>
   );
 }

@@ -1,0 +1,22 @@
+@keyframes fm-chart-labels { from { opacity:0; } to { opacity:1; } }
+@keyframes fm-chart-point { from { opacity:0; } to { opacity:1; } }
+.fm-donut-viewport { min-height:236px; }
+.fm-job-viewport { min-height:222px; }
+.fm-chart-pie-legend { animation:fm-chart-labels 200ms ease-out 1200ms backwards; }
+.fm-pie-segment { transform-origin:100px 100px;transition:transform 180ms ease-out,filter 180ms ease-out; }
+.fm-pie-segment circle { pointer-events:stroke; }
+.fm-pie-segment:hover { transform:scale(1.025);filter:brightness(.98); }
+.fm-chart-active-dot { animation:fm-chart-point 140ms ease-out;transition:r 140ms ease-out,opacity 140ms ease-out; }
+.recharts-bar-rectangle { transition:filter 160ms ease-out; }
+.recharts-bar-rectangle:hover { filter:brightness(.96); }
+.fm-bar-fill { transition:filter 160ms ease-out; }
+.fm-bar-fill:hover { filter:brightness(.96); }
+.fm-chart-tooltip { transition:opacity 140ms ease-out; }
+@media(min-width:1600px) { .fm-donut-viewport { min-height:256px; } }
+@media(max-width:1150px) { .fm-donut-viewport { min-height:191px; } }
+@media(max-width:767px) { .fm-donut-viewport { min-height:236px; } }
+@media(prefers-reduced-motion:reduce) {
+  .fm-chart-pie-legend,.fm-chart-active-dot { animation:none!important; }
+  .fm-pie-segment,.recharts-bar-rectangle,.fm-bar-fill,.fm-chart-tooltip { transition:none!important; }
+  .fm-pie-segment:hover { transform:none; }
+}

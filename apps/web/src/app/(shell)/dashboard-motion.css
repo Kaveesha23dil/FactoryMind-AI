@@ -28,11 +28,6 @@
 .fm-shell [role=tab] { transition:background-color 180ms,color 180ms,box-shadow 180ms; }
 .fm-shell dialog[open]>div>div { animation:fm-dialog-enter 240ms cubic-bezier(.2,.75,.25,1); }
 .fm-shell dialog[open]::backdrop { animation:fm-backdrop-enter 180ms ease-out; }
-.fm-shell .fm-bar-fill { transform-origin:bottom;animation:fm-bar-grow 750ms cubic-bezier(.2,.75,.25,1) both; }
-.fm-shell .fm-bar-column:nth-child(2) .fm-bar-fill { animation-delay:70ms; }
-.fm-shell .fm-bar-column:nth-child(3) .fm-bar-fill { animation-delay:140ms; }
-.fm-shell .fm-bar-column:nth-child(4) .fm-bar-fill { animation-delay:210ms; }
-.fm-shell .fm-donut svg { transform-origin:center;animation:fm-ring-enter 750ms ease-out; }
 .fm-shell .animate-pulse { background-image:linear-gradient(100deg,#e3ece2 20%,#f3f8f0 45%,#e3ece2 70%);background-size:220% 100%;animation:fm-skeleton-shimmer 1600ms linear infinite; }
 @media(hover:hover) and (pointer:fine) {
   .fm-shell .fm-stat-card:hover { transform:translateY(-3px);box-shadow:0 9px 24px #244e3b0d; }

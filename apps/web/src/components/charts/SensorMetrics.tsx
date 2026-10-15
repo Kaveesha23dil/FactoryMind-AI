@@ -2,6 +2,7 @@
 import {
   CartesianGrid,
   Line,
+  matchByDataKey,
   LineChart,
   ResponsiveContainer,
   Tooltip,
@@ -11,6 +12,11 @@ import {
 import type { TelemetryRecord } from "@/types/monitoring";
 import { formatDecimal, formatNumber } from "@/lib/format";
 import ChartCard from "@/components/charts/ChartCard";
+import ChartViewport from "@/components/charts/ChartViewport";
+import ProgressiveLine from "@/components/charts/ProgressiveLine";
+import { LINE_ANIMATION } from "@/components/charts/chartAnimation";
+import { useChartData } from "@/components/charts/useChartMotion";
+const matchSamples = matchByDataKey("recordId");
 interface SensorMetricsProps {
   records: TelemetryRecord[];
   maxSamples?: number;
@@ -54,6 +60,7 @@ function MetricLineChart({
   metric,
 }: Readonly<{
   data: Array<{
+    recordId: number;
     sample: number;
     speed: number;
     torque: number;
@@ -67,7 +74,7 @@ function MetricLineChart({
       ? formatDecimal(value, decimals)
       : formatNumber(Math.round(value));
   return (
-    <div className="h-44 w-full">
+    <ChartViewport className="h-44 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
           data={data}
@@ -88,6 +95,8 @@ function MetricLineChart({
             width={54}
           />
           <Tooltip
+            wrapperClassName="fm-chart-tooltip"
+            animationDuration={140}
             contentStyle={{
               background: "#ffffff",
               border: "1px solid #dfe9e2",
@@ -108,24 +117,27 @@ function MetricLineChart({
             stroke={metric.color}
             strokeWidth={2}
             dot={false}
-            activeDot={{ r: 3 }}
-            isAnimationActive={false}
+            activeDot={{ r: 3, className: "fm-chart-active-dot" }}
+            {...LINE_ANIMATION}
+            animationMatchBy={matchSamples}
+            shape={ProgressiveLine}
           />
         </LineChart>
       </ResponsiveContainer>
-    </div>
+    </ChartViewport>
   );
 }
 export default function SensorMetrics({
   records,
   maxSamples = 300,
 }: Readonly<SensorMetricsProps>) {
-  const data = records.slice(0, maxSamples).map((record, index) => ({
+  const data = useChartData(records.slice(0, maxSamples).map((record, index) => ({
+    recordId: record.record_id,
     sample: index + 1,
     speed: record.rotational_speed_rpm,
     torque: record.torque_nm,
     wear: record.tool_wear_min,
-  }));
+  })));
   if (data.length === 0) {
     return (
       <p className="py-12 text-center text-xs text-slate-500">

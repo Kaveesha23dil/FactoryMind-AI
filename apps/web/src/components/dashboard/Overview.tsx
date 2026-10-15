@@ -14,6 +14,7 @@ import type { BackendStatus, DatasetSummary } from "@/types/monitoring";
 import { formatNumber, formatPercent } from "@/lib/format";
 import DashboardHeader from "@/components/layout/DashboardHeader";
 import StatCard from "@/components/dashboard/StatCard";
+import OperationalOverview from "@/components/dashboard/OperationalOverview";
 import { ErrorState, KpiGridSkeleton } from "@/components/ui/Feedback";
 interface RoadmapItem {
   href: string;
@@ -48,7 +49,7 @@ const ROADMAP: RoadmapItem[] = [
     title: "AI Investigations",
     description:
       "Multi-agent, evidence-driven root cause investigation workflow.",
-    status: "planned",
+    status: "available",
   },
 ];
 async function fetchOverviewData() {
@@ -121,6 +122,7 @@ export default function Overview() {
       />
 
       <div className="flex-1 space-y-6 px-4 py-6 sm:px-6 xl:px-8">
+        <OperationalOverview />
         {(function resolveDisplay() {
           if (loading) {
             return <KpiGridSkeleton />;

@@ -1,4 +1,5 @@
 export function allowedBackendPath(path: readonly string[]): boolean {
+  if (path.length === 1 && path[0] === "health") return true;
   return path[0] === "api" && path.at(-1) !== "process" &&
     path.every((part) => /^[a-zA-Z0-9_-]+$/.test(part));
 }

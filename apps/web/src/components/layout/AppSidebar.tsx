@@ -32,7 +32,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/incidents", label: "Incidents", icon: AlertTriangle },
   { href: "/investigations", label: "AI Investigations", icon: Bot },
   { href: "/maintenance", label: "Maintenance drafts", icon: Wrench },
-  { href: "/settings", label: "Settings", icon: Settings, comingSoon: true },
+  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 function BrandMark() {

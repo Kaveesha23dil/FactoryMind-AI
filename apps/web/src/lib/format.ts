@@ -1,3 +1,5 @@
+import { formatTimestamp, readPreferences } from "@/lib/preferences";
+
 export function cn(...values: Array<string | false | null | undefined>): string {
   return values.filter(Boolean).join(" ");
 }
@@ -16,13 +18,6 @@ export function formatDecimal(value: number, digits = 2): string {
   return value.toFixed(digits);
 }
 
-const dateTimeFormatter = new Intl.DateTimeFormat("en-US", {
-  dateStyle: "medium",
-  timeStyle: "medium",
-});
-
 export function formatDateTime(iso: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return iso;
-  return dateTimeFormatter.format(date);
+  return formatTimestamp(iso, readPreferences());
 }

@@ -1,6 +1,7 @@
 "use client";
 import {
   Bar,
+  matchByDataKey,
   BarChart,
   CartesianGrid,
   Cell,
@@ -11,6 +12,10 @@ import {
   YAxis,
 } from "recharts";
 import type { FeatureContribution } from "@/types/anomaly";
+import ChartViewport from "@/components/charts/ChartViewport";
+import { barAnimation } from "@/components/charts/chartAnimation";
+import { useChartData } from "@/components/charts/useChartMotion";
+const matchBars = matchByDataKey("feature");
 interface FeatureContributionChartProps {
   features: FeatureContribution[];
   featureZThreshold: number;
@@ -19,14 +24,14 @@ export default function FeatureContributionChart({
   features,
   featureZThreshold,
 }: Readonly<FeatureContributionChartProps>) {
-  const data = features.map((feature) => ({
+  const data = useChartData(features.map((feature) => ({
     feature: feature.feature,
     name: feature.label,
     zscore: feature.robust_zscore,
     isAnomalous: feature.is_anomalous,
-  }));
+  })));
   return (
-    <div className="h-72 w-full">
+    <ChartViewport className="h-72 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
           layout="vertical"
@@ -60,6 +65,8 @@ export default function FeatureContributionChart({
             width={150}
           />
           <Tooltip
+            wrapperClassName="fm-chart-tooltip"
+            animationDuration={140}
             cursor={{ fill: "rgba(148, 163, 184, 0.08)" }}
             contentStyle={{
               background: "#ffffff",
@@ -82,7 +89,7 @@ export default function FeatureContributionChart({
             strokeDasharray="4 4"
           />
           <ReferenceLine x={0} stroke="#9db2a3" />
-          <Bar dataKey="zscore" radius={[0, 3, 3, 0]} isAnimationActive={false}>
+          <Bar dataKey="zscore" radius={[0, 3, 3, 0]} {...barAnimation(data.length)} animationMatchBy={matchBars}>
             {data.map((entry) => (
               <Cell
                 key={entry.feature}
@@ -92,6 +99,6 @@ export default function FeatureContributionChart({
           </Bar>
         </BarChart>
       </ResponsiveContainer>
-    </div>
+    </ChartViewport>
   );
 }

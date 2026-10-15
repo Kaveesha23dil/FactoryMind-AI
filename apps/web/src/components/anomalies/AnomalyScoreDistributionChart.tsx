@@ -1,6 +1,7 @@
 "use client";
 import {
   Bar,
+  matchByDataKey,
   BarChart,
   CartesianGrid,
   Cell,
@@ -12,6 +13,10 @@ import {
 } from "recharts";
 import type { ScoreBin } from "@/types/anomaly";
 import { formatNumber } from "@/lib/format";
+import ChartViewport from "@/components/charts/ChartViewport";
+import { barAnimation } from "@/components/charts/chartAnimation";
+import { useChartData } from "@/components/charts/useChartMotion";
+const matchBars = matchByDataKey("range");
 interface AnomalyScoreDistributionChartProps {
   histogram: ScoreBin[];
   threshold: number;
@@ -20,15 +25,15 @@ export default function AnomalyScoreDistributionChart({
   histogram,
   threshold,
 }: Readonly<AnomalyScoreDistributionChartProps>) {
-  const data = histogram.map((bin) => ({
+  const data = useChartData(histogram.map((bin) => ({
     label: `${bin.bin_start.toFixed(1)}`,
     range: `${bin.bin_start.toFixed(2)} – ${bin.bin_end.toFixed(2)}`,
     count: bin.count,
     anomalous: bin.bin_start >= threshold,
-  }));
+  })));
   const thresholdIndex = histogram.findIndex((bin) => bin.bin_end > threshold);
   return (
-    <div className="h-64 w-full">
+    <ChartViewport className="h-64 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
           data={data}
@@ -70,6 +75,8 @@ export default function AnomalyScoreDistributionChart({
             }}
           />
           <Tooltip
+            wrapperClassName="fm-chart-tooltip"
+            animationDuration={140}
             cursor={{ fill: "rgba(148, 163, 184, 0.08)" }}
             contentStyle={{
               background: "#ffffff",
@@ -102,7 +109,7 @@ export default function AnomalyScoreDistributionChart({
               }}
             />
           )}
-          <Bar dataKey="count" radius={[3, 3, 0, 0]} isAnimationActive={false}>
+          <Bar dataKey="count" radius={[3, 3, 0, 0]} {...barAnimation(data.length)} animationMatchBy={matchBars}>
             {data.map((entry) => (
               <Cell
                 key={entry.range}
@@ -112,6 +119,6 @@ export default function AnomalyScoreDistributionChart({
           </Bar>
         </BarChart>
       </ResponsiveContainer>
-    </div>
+    </ChartViewport>
   );
 }

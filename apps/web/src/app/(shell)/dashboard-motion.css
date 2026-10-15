@@ -1,0 +1,47 @@
+/* Motion stays decorative: no delayed data, workflow remounts or hidden content. */
+@keyframes fm-panel-enter {
+  from { opacity:.3;transform:translateY(14px); }
+  to { opacity:1;transform:translateY(0); }
+}
+@keyframes fm-dialog-enter {
+  from { opacity:0;transform:translateY(12px) scale(.985); }
+  to { opacity:1;transform:translateY(0) scale(1); }
+}
+@keyframes fm-backdrop-enter { from { opacity:0; } to { opacity:1; } }
+@keyframes fm-bar-grow { from { transform:scaleY(0); } to { transform:scaleY(1); } }
+@keyframes fm-ring-enter { from { opacity:0;transform:rotate(-8deg) scale(.96); } to { opacity:1;transform:rotate(0) scale(1); } }
+@keyframes fm-skeleton-shimmer { from { background-position:180% 0; } to { background-position:-80% 0; } }
+
+.fm-shell .fm-reveal { animation:fm-panel-enter 520ms cubic-bezier(.2,.75,.25,1) var(--fm-stagger,0ms) backwards; }
+.fm-shell .fm-metric { transition:transform 220ms ease,box-shadow 220ms ease; }
+.fm-shell .fm-stat-card { transition:transform 220ms ease,box-shadow 220ms ease; }
+.fm-shell :is(button,a,select,input,textarea) { -webkit-tap-highlight-color:transparent; }
+.fm-shell :is(button,a).bg-accent,.fm-shell .fm-primary,.fm-shell .fm-refresh {
+  transition:background-color 180ms,color 180ms,box-shadow 180ms,transform 180ms;
+}
+.fm-shell button:active:not(:disabled),.fm-shell .fm-primary:active { transform:scale(.98); }
+.fm-shell .fm-overview-nav nav a { transition:background-color 200ms,color 200ms,box-shadow 200ms; }
+.fm-shell .fm-overview-nav nav a svg { transition:transform 200ms ease; }
+.fm-shell tbody tr { transition:background-color 180ms ease; }
+.fm-shell :is(input,textarea,select) { transition:border-color 180ms,box-shadow 180ms; }
+.fm-shell :is(input,textarea,select):focus-visible { box-shadow:0 0 0 3px #337c6912; }
+.fm-shell [role=tab] { transition:background-color 180ms,color 180ms,box-shadow 180ms; }
+.fm-shell dialog[open]>div>div { animation:fm-dialog-enter 240ms cubic-bezier(.2,.75,.25,1); }
+.fm-shell dialog[open]::backdrop { animation:fm-backdrop-enter 180ms ease-out; }
+.fm-shell .fm-bar-fill { transform-origin:bottom;animation:fm-bar-grow 750ms cubic-bezier(.2,.75,.25,1) both; }
+.fm-shell .fm-bar-column:nth-child(2) .fm-bar-fill { animation-delay:70ms; }
+.fm-shell .fm-bar-column:nth-child(3) .fm-bar-fill { animation-delay:140ms; }
+.fm-shell .fm-bar-column:nth-child(4) .fm-bar-fill { animation-delay:210ms; }
+.fm-shell .fm-donut svg { transform-origin:center;animation:fm-ring-enter 750ms ease-out; }
+.fm-shell .animate-pulse { background-image:linear-gradient(100deg,#e3ece2 20%,#f3f8f0 45%,#e3ece2 70%);background-size:220% 100%;animation:fm-skeleton-shimmer 1600ms linear infinite; }
+@media(hover:hover) and (pointer:fine) {
+  .fm-shell .fm-stat-card:hover { transform:translateY(-3px);box-shadow:0 9px 24px #244e3b0d; }
+  .fm-shell .fm-overview-nav nav a:hover svg { transform:translateX(2px); }
+  .fm-shell .fm-primary:hover { transform:translateY(-2px);box-shadow:0 7px 18px #073f3d19; }
+  .fm-shell .fm-refresh:hover { box-shadow:0 3px 12px #244e3b0b; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .fm-shell *,.fm-shell *::before,.fm-shell *::after { animation:none!important;transition:none!important;scroll-behavior:auto!important; }
+  .fm-shell dialog::backdrop { animation:none!important; }
+  .fm-shell :is(.fm-metric,.fm-stat-card,.fm-primary):hover,.fm-shell .fm-overview-nav nav a:hover svg,.fm-shell button:active { transform:none!important; }
+}

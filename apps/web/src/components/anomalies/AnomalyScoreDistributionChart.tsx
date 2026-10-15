@@ -35,28 +35,28 @@ export default function AnomalyScoreDistributionChart({
           margin={{ top: 8, right: 12, bottom: 8, left: 0 }}
         >
           <CartesianGrid
-            stroke="#1E2A43"
+            stroke="#dfe9e2"
             strokeDasharray="3 3"
             vertical={false}
           />
           <XAxis
             dataKey="label"
-            tick={{ fontSize: 10, fill: "#94A3B8" }}
-            tickLine={{ stroke: "#1E2A43" }}
-            axisLine={{ stroke: "#1E2A43" }}
+            tick={{ fontSize: 10, fill: "#617d6c" }}
+            tickLine={{ stroke: "#dfe9e2" }}
+            axisLine={{ stroke: "#dfe9e2" }}
             minTickGap={20}
             label={{
               value: "Anomaly score",
               position: "insideBottom",
               offset: -2,
               fontSize: 11,
-              fill: "#64748B",
+              fill: "#718775",
             }}
           />
           <YAxis
-            tick={{ fontSize: 11, fill: "#94A3B8" }}
-            tickLine={{ stroke: "#1E2A43" }}
-            axisLine={{ stroke: "#1E2A43" }}
+            tick={{ fontSize: 11, fill: "#617d6c" }}
+            tickLine={{ stroke: "#dfe9e2" }}
+            axisLine={{ stroke: "#dfe9e2" }}
             width={56}
             allowDecimals={false}
             label={{
@@ -65,20 +65,20 @@ export default function AnomalyScoreDistributionChart({
               position: "insideLeft",
               offset: 8,
               fontSize: 11,
-              fill: "#64748B",
+              fill: "#718775",
               style: { textAnchor: "middle" },
             }}
           />
           <Tooltip
             cursor={{ fill: "rgba(148, 163, 184, 0.08)" }}
             contentStyle={{
-              background: "#16213A",
-              border: "1px solid #1E2A43",
+              background: "#ffffff",
+              border: "1px solid #dfe9e2",
               borderRadius: 8,
               fontSize: 12,
-              color: "#E2E8F0",
+              color: "#264c43",
             }}
-            labelStyle={{ color: "#94A3B8" }}
+            labelStyle={{ color: "#617d6c" }}
             labelFormatter={(_, payload) =>
               payload?.[0]?.payload?.range
                 ? `Score ${payload[0].payload.range}`
@@ -92,13 +92,13 @@ export default function AnomalyScoreDistributionChart({
           {thresholdIndex >= 0 && (
             <ReferenceLine
               x={data[thresholdIndex].label}
-              stroke="#F59E0B"
+              stroke="#c9a665"
               strokeDasharray="4 4"
               label={{
                 value: `threshold ${threshold.toFixed(1)}`,
                 position: "top",
                 fontSize: 10,
-                fill: "#F59E0B",
+                fill: "#c9a665",
               }}
             />
           )}
@@ -106,7 +106,7 @@ export default function AnomalyScoreDistributionChart({
             {data.map((entry) => (
               <Cell
                 key={entry.range}
-                fill={entry.anomalous ? "#EF4444" : "#2251FF"}
+                fill={entry.anomalous ? "#cc8f98" : "#6b8e80"}
               />
             ))}
           </Bar>

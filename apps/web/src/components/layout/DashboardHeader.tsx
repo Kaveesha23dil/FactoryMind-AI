@@ -51,7 +51,7 @@ export default function DashboardHeader({
   const status = STATUS_META[backendStatus];
   const StatusIcon = status.icon;
   return (
-    <header className="flex flex-col gap-4 border-b border-line bg-surface/40 px-4 py-5 sm:px-6 xl:px-8">
+    <header className="fm-page-header flex flex-col gap-4 border-b border-line px-4 py-6 sm:px-6 xl:px-8">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-xl font-semibold tracking-tight text-white sm:text-2xl">

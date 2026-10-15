@@ -29,7 +29,7 @@ const METRICS: MetricDefinition[] = [
     title: "Rotational Speed",
     description: "Rotational speed recorded for each dataset record.",
     unit: "rpm",
-    color: "#2251FF",
+    color: "#6b8e80",
     decimals: 0,
   },
   {
@@ -37,7 +37,7 @@ const METRICS: MetricDefinition[] = [
     title: "Torque",
     description: "Torque recorded for each dataset record.",
     unit: "Nm",
-    color: "#10B981",
+    color: "#73a88a",
     decimals: 1,
   },
   {
@@ -45,7 +45,7 @@ const METRICS: MetricDefinition[] = [
     title: "Tool Wear",
     description: "Tool wear accumulated in minutes per dataset record.",
     unit: "min",
-    color: "#38BDF8",
+    color: "#76b8a8",
     decimals: 0,
   },
 ];
@@ -73,29 +73,29 @@ function MetricLineChart({
           data={data}
           margin={{ top: 8, right: 12, bottom: 8, left: 0 }}
         >
-          <CartesianGrid stroke="#1E2A43" strokeDasharray="3 3" />
+          <CartesianGrid stroke="#dfe9e2" strokeDasharray="3 3" />
           <XAxis
             dataKey="sample"
-            tick={{ fontSize: 10, fill: "#94A3B8" }}
-            tickLine={{ stroke: "#1E2A43" }}
-            axisLine={{ stroke: "#1E2A43" }}
+            tick={{ fontSize: 10, fill: "#617d6c" }}
+            tickLine={{ stroke: "#dfe9e2" }}
+            axisLine={{ stroke: "#dfe9e2" }}
             tickFormatter={String}
           />
           <YAxis
-            tick={{ fontSize: 10, fill: "#94A3B8" }}
-            tickLine={{ stroke: "#1E2A43" }}
-            axisLine={{ stroke: "#1E2A43" }}
+            tick={{ fontSize: 10, fill: "#617d6c" }}
+            tickLine={{ stroke: "#dfe9e2" }}
+            axisLine={{ stroke: "#dfe9e2" }}
             width={54}
           />
           <Tooltip
             contentStyle={{
-              background: "#16213A",
-              border: "1px solid #1E2A43",
+              background: "#ffffff",
+              border: "1px solid #dfe9e2",
               borderRadius: 8,
               fontSize: 12,
-              color: "#E2E8F0",
+              color: "#264c43",
             }}
-            labelStyle={{ color: "#94A3B8" }}
+            labelStyle={{ color: "#617d6c" }}
             labelFormatter={(label) => `Dataset record #${label}`}
             formatter={(value) => [
               `${formatValue(Number(value))} ${metric.unit}`,

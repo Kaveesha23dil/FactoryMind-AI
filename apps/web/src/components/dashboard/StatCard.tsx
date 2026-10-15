@@ -16,6 +16,10 @@ const TONE_STYLES: Record<StatCardTone, string> = {
   warning: "border-warning/30 bg-warning/10 text-warning",
   danger: "border-danger/30 bg-danger/10 text-danger",
 };
+const CARD_STYLES: Record<StatCardTone, string> = {
+  accent: "bg-[#c5c7f0]", cyan: "bg-[#a4d9cd]", success: "bg-[#dceeb5]",
+  warning: "bg-[#f1e1b9]", danger: "bg-[#f2bfc0]",
+};
 export default function StatCard({
   label,
   value,
@@ -25,7 +29,7 @@ export default function StatCard({
   loading = false,
 }: Readonly<StatCardProps>) {
   return (
-    <article className="rounded-lg border border-line bg-surface p-5">
+    <article className={cn("fm-stat-card rounded-lg border border-transparent p-5", CARD_STYLES[tone])}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[11px] font-medium tracking-[0.12em] text-slate-400 uppercase">

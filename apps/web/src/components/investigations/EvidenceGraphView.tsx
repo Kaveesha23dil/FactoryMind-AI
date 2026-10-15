@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Maximize2, Minus, Plus, RefreshCw, Share2 } from "lucide-react";
 import { getEvidenceGraph } from "@/lib/api";
 import type { EvidenceGraph, GraphNode } from "@/types/evidenceGraph";
@@ -74,6 +74,21 @@ export default function EvidenceGraphView({
     ty: number;
   } | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
+  useEffect(() => {
+    let stale = false;
+    void getEvidenceGraph(investigationId).then(next => {
+      if (stale) return;
+      setGraph(next);
+      setError(null);
+      setSelectedId(null);
+      setLoading(false);
+    }).catch(reason => {
+      if (stale) return;
+      setError(reason instanceof Error ? reason.message : "Unable to load the saved evidence graph.");
+      setLoading(false);
+    });
+    return () => { stale = true; };
+  }, [investigationId]);
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -348,7 +363,7 @@ export default function EvidenceGraphView({
                       width={NODE_W}
                       height={NODE_H}
                       rx="10"
-                      fill="#16213a"
+                      fill="#ffffff"
                       stroke={color}
                       strokeWidth={isSelected ? 2.5 : 1.25}
                       strokeOpacity={dimmed ? 0.35 : 1}
@@ -368,7 +383,7 @@ export default function EvidenceGraphView({
                       y={-8}
                       fontSize="12"
                       fontWeight="600"
-                      fill="#e2e8f0"
+                      fill="#264c43"
                       opacity={dimmed ? 0.4 : 1}
                     >
                       {truncate(node.label)}
@@ -377,7 +392,7 @@ export default function EvidenceGraphView({
                       x={-NODE_W / 2 + 16}
                       y={12}
                       fontSize="10.5"
-                      fill="#94a3b8"
+                      fill="#617d6c"
                       opacity={dimmed ? 0.4 : 1}
                     >
                       {truncate(

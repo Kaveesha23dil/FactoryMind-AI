@@ -26,11 +26,11 @@ export const SEVERITY_TONE: Record<Severity, BadgeTone> = {
 };
 
 export const SEVERITY_COLOR: Record<Severity, string> = {
-  normal: "#10B981",
-  low: "#38BDF8",
-  medium: "#F59E0B",
-  high: "#EF4444",
-  critical: "#B91C1C",
+  normal: "#73a88a",
+  low: "#76b8a8",
+  medium: "#c9a665",
+  high: "#cc8f98",
+  critical: "#9b5264",
 };
 
 export const INCIDENT_STATUS_LABELS: Record<IncidentStatus, string> = {

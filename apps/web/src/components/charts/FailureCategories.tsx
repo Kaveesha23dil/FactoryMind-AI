@@ -14,7 +14,7 @@ import { formatNumber } from "@/lib/format";
 interface FailureCategoriesProps {
   categories: FailureCategory[];
 }
-const BAR_COLORS = ["#2251FF", "#38BDF8", "#F59E0B", "#10B981", "#8B5CF6"];
+const BAR_COLORS = ["#6b8e80", "#76b8a8", "#c9a665", "#73a88a", "#a8a5cf"];
 export default function FailureCategories({
   categories,
 }: Readonly<FailureCategoriesProps>) {
@@ -37,21 +37,21 @@ export default function FailureCategories({
           margin={{ top: 8, right: 12, bottom: 8, left: 0 }}
         >
           <CartesianGrid
-            stroke="#1E2A43"
+            stroke="#dfe9e2"
             strokeDasharray="3 3"
             vertical={false}
           />
           <XAxis
             dataKey="code"
-            tick={{ fontSize: 11, fill: "#94A3B8" }}
-            tickLine={{ stroke: "#1E2A43" }}
-            axisLine={{ stroke: "#1E2A43" }}
+            tick={{ fontSize: 11, fill: "#617d6c" }}
+            tickLine={{ stroke: "#dfe9e2" }}
+            axisLine={{ stroke: "#dfe9e2" }}
             interval={0}
           />
           <YAxis
-            tick={{ fontSize: 11, fill: "#94A3B8" }}
-            tickLine={{ stroke: "#1E2A43" }}
-            axisLine={{ stroke: "#1E2A43" }}
+            tick={{ fontSize: 11, fill: "#617d6c" }}
+            tickLine={{ stroke: "#dfe9e2" }}
+            axisLine={{ stroke: "#dfe9e2" }}
             width={52}
             allowDecimals={false}
             label={{
@@ -60,20 +60,20 @@ export default function FailureCategories({
               position: "insideLeft",
               offset: 8,
               fontSize: 11,
-              fill: "#64748B",
+              fill: "#718775",
               style: { textAnchor: "middle" },
             }}
           />
           <Tooltip
             cursor={{ fill: "rgba(148, 163, 184, 0.08)" }}
             contentStyle={{
-              background: "#16213A",
-              border: "1px solid #1E2A43",
+              background: "#ffffff",
+              border: "1px solid #dfe9e2",
               borderRadius: 8,
               fontSize: 12,
-              color: "#E2E8F0",
+              color: "#264c43",
             }}
-            labelStyle={{ color: "#94A3B8" }}
+            labelStyle={{ color: "#617d6c" }}
             formatter={(value) => [
               `${formatNumber(Number(value))} records`,
               "Count",

@@ -35,20 +35,20 @@ export default function TemperatureChart({
     <div className="h-72 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <ScatterChart margin={{ top: 8, right: 12, bottom: 8, left: 4 }}>
-          <CartesianGrid stroke="#1E2A43" strokeDasharray="3 3" />
+          <CartesianGrid stroke="#dfe9e2" strokeDasharray="3 3" />
           <XAxis
             dataKey="sample"
             type="number"
             name="Dataset record"
-            tick={{ fontSize: 11, fill: "#94A3B8" }}
-            tickLine={{ stroke: "#1E2A43" }}
-            axisLine={{ stroke: "#1E2A43" }}
+            tick={{ fontSize: 11, fill: "#617d6c" }}
+            tickLine={{ stroke: "#dfe9e2" }}
+            axisLine={{ stroke: "#dfe9e2" }}
             label={{
               value: "Dataset observation ID (not time)",
               position: "insideBottom",
               offset: -2,
               fontSize: 11,
-              fill: "#64748B",
+              fill: "#718775",
             }}
             tickFormatter={(value) => formatDecimal(Number(value), 0)}
           />
@@ -57,9 +57,9 @@ export default function TemperatureChart({
             type="number"
             name="Temperature"
             unit="°C"
-            tick={{ fontSize: 11, fill: "#94A3B8" }}
-            tickLine={{ stroke: "#1E2A43" }}
-            axisLine={{ stroke: "#1E2A43" }}
+            tick={{ fontSize: 11, fill: "#617d6c" }}
+            tickLine={{ stroke: "#dfe9e2" }}
+            axisLine={{ stroke: "#dfe9e2" }}
             width={52}
             label={{
               value: "Temperature (°C)",
@@ -67,19 +67,19 @@ export default function TemperatureChart({
               position: "insideLeft",
               offset: 8,
               fontSize: 11,
-              fill: "#64748B",
+              fill: "#718775",
               style: { textAnchor: "middle" },
             }}
           />
           <Tooltip
             contentStyle={{
-              background: "#16213A",
-              border: "1px solid #1E2A43",
+              background: "#ffffff",
+              border: "1px solid #dfe9e2",
               borderRadius: 8,
               fontSize: 12,
-              color: "#E2E8F0",
+              color: "#264c43",
             }}
-            labelStyle={{ color: "#94A3B8" }}
+            labelStyle={{ color: "#617d6c" }}
             labelFormatter={(label) => `Dataset record #${label}`}
             formatter={(value) => [`${formatDecimal(Number(value), 1)} °C`]}
           />
@@ -94,7 +94,7 @@ export default function TemperatureChart({
               sample: sample.sample,
               temperature: sample.air,
             }))}
-            fill="#38BDF8"
+            fill="#76b8a8"
             isAnimationActive={false}
           />
           <Scatter
@@ -103,7 +103,7 @@ export default function TemperatureChart({
               sample: sample.sample,
               temperature: sample.process,
             }))}
-            fill="#F59E0B"
+            fill="#c9a665"
             isAnimationActive={false}
           />
         </ScatterChart>

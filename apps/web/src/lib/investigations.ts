@@ -104,12 +104,12 @@ export const GRAPH_NODE_LABELS: Record<GraphNodeType, string> = {
 };
 
 export const GRAPH_NODE_COLORS: Record<GraphNodeType, string> = {
-  incident: "#2251ff",
-  sensor_evidence: "#38bdf8",
-  document_evidence: "#f59e0b",
-  visual_evidence: "#10b981",
-  hypothesis: "#a855f7",
-  recommended_action: "#f472b6",
+  incident: "#6b8e80",
+  sensor_evidence: "#76b8a8",
+  document_evidence: "#c9a665",
+  visual_evidence: "#73a88a",
+  hypothesis: "#9588b9",
+  recommended_action: "#c590a7",
 };
 
 export const GRAPH_RELATIONSHIP_LABELS: Record<GraphRelationship, string> = {
@@ -121,11 +121,11 @@ export const GRAPH_RELATIONSHIP_LABELS: Record<GraphRelationship, string> = {
 };
 
 export const GRAPH_RELATIONSHIP_COLORS: Record<GraphRelationship, string> = {
-  SUPPORTS: "#10b981",
-  CONTRADICTS: "#ef4444",
-  DERIVED_FROM: "#38bdf8",
-  RELATES_TO: "#64748b",
-  RECOMMENDS: "#f59e0b",
+  SUPPORTS: "#73a88a",
+  CONTRADICTS: "#cc8f98",
+  DERIVED_FROM: "#76b8a8",
+  RELATES_TO: "#718775",
+  RECOMMENDS: "#c9a665",
 };
 
 export const EXCLUDABLE_EVIDENCE_TYPES: EvidenceType[] = [

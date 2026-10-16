@@ -11,6 +11,7 @@ import sqlite3
 
 from services.api.core import config
 from services.api.services.evaluation_service import EvaluationService
+from services.api.services.anomaly_engine import get_engine
 from services.api.services.investigation_repository import SqliteInvestigationRepository
 from services.api.services.knowledge_repository import KNOWLEDGE_PATH
 from services.api.services.submission_service import audit_report
@@ -64,10 +65,12 @@ def evaluate_saved(connection):
             'citation_id_resolution': {'resolved': resolved, 'total': links, 'rate': resolved / links if links else None,
                                        'limitation': 'Structural ID resolution, not semantic citation accuracy. Source mismatches and critic issues are reported separately.'},
             'saved_counterfactuals': {'samples': len(scenarios), 'scenarios': scenarios,
+                                     'evidence_exclusion_success_rate': sum(not s['leaked_ids'] for s in scenarios) / len(scenarios) if scenarios else None,
                                      'leakage_scenario_rate': sum(bool(s['leaked_ids']) for s in scenarios) / len(scenarios) if scenarios else None,
                                      'scope': 'Stored/cited explicit and dependency-closed evidence IDs; does not prove absence of paraphrased leakage.'},
             'latency_seconds': {'samples': len(durations), 'mean': sum(durations)/len(durations) if durations else None,
                                 'values': durations, 'scope': 'Stored completed Google-provider job start-to-completion durations; not a benchmark of current live capacity.'},
+            'semantic_valid_citation_rate': {'rate': None, 'reason': 'No independent entailment annotations. Resolvable IDs and matching sources do not establish supporting or contradicting semantics.'},
             'root_cause_top1_top3': {'result': None, 'reason': 'No independent machine-specific root-cause labels. AI4I failure flags are not hypothesis-ranking ground truth.'}}
 
 
@@ -79,6 +82,9 @@ def main():
     result = {'dataset_sha256': hashlib.sha256(config.settings.dataset_path.read_bytes()).hexdigest(),
               'knowledge_sha256': hashlib.sha256(KNOWLEDGE_PATH.read_bytes()).hexdigest(),
               'anomaly_evaluation': EvaluationService().report(), 'saved_runs': None}
+    # Fingerprint the exact held-out membership, not just the random seed.
+    held_out_ids = sorted(int(identifier) for identifier in get_engine().test_frame['UDI'])
+    result['held_out_record_ids_sha256'] = hashlib.sha256(json.dumps(held_out_ids, separators=(',', ':')).encode()).hexdigest()
     if args.database.exists():
         with sqlite3.connect(args.database.resolve().as_uri() + '?mode=ro', uri=True) as connection:
             connection.row_factory = sqlite3.Row

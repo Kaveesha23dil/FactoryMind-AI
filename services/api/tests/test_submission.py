@@ -79,3 +79,5 @@ def test_offline_evaluation_does_not_count_scripted_latency(investigation_env, a
     assert result['latency_seconds']['samples'] == 0
     assert result['citation_id_resolution']['rate'] is None
     assert result['saved_counterfactuals']['leakage_scenario_rate'] is None
+    assert result['saved_counterfactuals']['evidence_exclusion_success_rate'] is None
+    assert result['semantic_valid_citation_rate']['rate'] is None

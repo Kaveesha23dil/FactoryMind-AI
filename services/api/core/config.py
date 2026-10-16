@@ -308,6 +308,15 @@ VISUAL_MAX_IMAGE_BYTES = _env_int("FACTORYMIND_VISUAL_MAX_IMAGE_BYTES", 5 * 1024
 
 @dataclass(frozen=True)
 class Settings:
+    deployment_target: str = field(default_factory=lambda: os.environ.get('FACTORYMIND_DEPLOYMENT_TARGET', 'gcp'))
+    database_url: str | None = field(default_factory=lambda: os.environ.get('FACTORYMIND_DATABASE_URL'))
+    supabase_url: str | None = field(default_factory=lambda: os.environ.get('FACTORYMIND_SUPABASE_URL'))
+    supabase_anon_key: str | None = field(default_factory=lambda: os.environ.get('FACTORYMIND_SUPABASE_ANON_KEY'))
+    supabase_service_key: str | None = field(default_factory=lambda: os.environ.get('FACTORYMIND_SUPABASE_SERVICE_KEY'))
+    portable_readers: list[str] = field(default_factory=lambda: _env_list('FACTORYMIND_PORTABLE_READERS', []))
+    portable_writers: list[str] = field(default_factory=lambda: _env_list('FACTORYMIND_PORTABLE_WRITERS', []))
+    portable_writes_enabled: bool = field(default_factory=lambda: _env_bool('FACTORYMIND_PORTABLE_WRITES_ENABLED', False))
+    portable_daily_limit: int = field(default_factory=lambda: max(1, _env_int('FACTORYMIND_PORTABLE_DAILY_AI_LIMIT', 5)))
     app_env: str = field(default_factory=lambda: os.environ.get('FACTORYMIND_ENV', 'production' if os.environ.get('K_SERVICE') else 'development'))
     persistence_backend: str = field(default_factory=lambda: os.environ.get('FACTORYMIND_PERSISTENCE', 'sqlite'))
     firestore_database: str = field(default_factory=lambda: os.environ.get('FACTORYMIND_FIRESTORE_DATABASE', '(default)'))

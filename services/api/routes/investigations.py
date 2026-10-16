@@ -156,3 +156,17 @@ def process_investigation(
         stage=job["stage"],
         executed=job["status"] in ("completed", "failed"),
     )
+
+
+@router.post('/api/investigations/{investigation_id}/execute', response_model=InvestigationRunResponse)
+def execute_portable(investigation_id: str):
+    """Explicit presenter recovery after an interrupted request; never a polling worker."""
+    if config.settings.deployment_target != 'render':
+        raise HTTPException(status_code=404, detail='Portable execution is not enabled')
+    try:
+        service = get_service()
+        before = service.get(investigation_id)
+        job = service.run_job(investigation_id)
+    except InvestigationNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return InvestigationRunResponse(investigation_id=investigation_id, status=job['status'], stage=job['stage'], executed=job['attempt_count'] > before['attempt_count'])

@@ -1,0 +1,60 @@
+# Optional Blueprint. Apply manually only after reviewing free plan eligibility.
+services:
+  - type: web
+    name: factorymind-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r services/api/requirements-portable.txt
+    startCommand: python -m uvicorn services.api.main:app --host 0.0.0.0 --port $PORT --workers 1
+    healthCheckPath: /healthz
+    autoDeployTrigger: off
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.10
+      - key: FACTORYMIND_ENV
+        value: production
+      - key: FACTORYMIND_DEPLOYMENT_TARGET
+        value: render
+      - key: FACTORYMIND_DATABASE_URL
+        sync: false
+      - key: FACTORYMIND_PERSISTENCE
+        value: postgres
+      - key: FACTORYMIND_UPLOAD_BACKEND
+        value: supabase
+      - key: FACTORYMIND_JOB_DISPATCH
+        value: portable
+      - key: FACTORYMIND_INVESTIGATION_ASYNC
+        value: "false"
+      - key: FACTORYMIND_INVESTIGATION_TIMEOUT_SECONDS
+        value: "20"
+      - key: FACTORYMIND_INVESTIGATION_MAX_RETRIES
+        value: "0"
+      - key: FACTORYMIND_GEMINI_CONCURRENCY
+        value: "1"
+      - key: AI_PROVIDER
+        value: google
+      - key: AI_INVESTIGATION_ENABLED
+        value: "false"
+      - key: FACTORYMIND_PORTABLE_WRITES_ENABLED
+        value: "false"
+      # Add every required value from deploy/render-backend.env.example.
+  - type: web
+    name: factorymind-web
+    runtime: node
+    plan: free
+    rootDir: apps/web
+    buildCommand: npm ci && npm run build && node scripts/prepare-standalone.mjs
+    startCommand: node .next/standalone/server.js
+    autoDeployTrigger: off
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: HOSTNAME
+        value: 0.0.0.0
+      - key: NEXT_PUBLIC_API_URL
+        value: /api/backend
+      - key: FACTORYMIND_DEPLOYMENT_TARGET
+        value: render
+      - key: FACTORYMIND_BACKEND_URL
+        sync: false
+      # Add every required value from deploy/render-frontend.env.example.

@@ -98,7 +98,7 @@ def readiness():
         return JSONResponse({'status':'not_ready'}, status_code=503)
     try:
         get_service().repository.initialize()
-        if config.settings.upload_backend == 'gcs':
+        if config.settings.upload_backend in ('gcs', 'supabase'):
             from services.api.services.object_storage import object_store
             object_store().check()
     except Exception:
@@ -114,6 +114,14 @@ app.include_router(counterfactuals.router)
 app.include_router(visual_inspection.router)
 app.include_router(submission.router)
 app.include_router(settings_routes.router)
+
+
+@app.get('/api/auth/session', include_in_schema=False)
+def user_session(request: Request):
+    if config.settings.deployment_target != 'render' or not getattr(request.state, 'principal', None):
+        return JSONResponse({'detail': 'Portable session unavailable'}, status_code=404)
+    return {'authenticated': True, 'can_write': config.settings.portable_writes_enabled and request.state.principal in config.settings.portable_writers,
+            'workspace': 'FactoryMind AI shared demo workspace'}
 
 
 @app.exception_handler(Exception)

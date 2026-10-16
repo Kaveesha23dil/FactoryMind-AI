@@ -1,8 +1,33 @@
 import { GoogleAuth } from "google-auth-library";
 import { allowedBackendPath, configuredBackend, trustedWriteOrigin, boundedBody } from "@/lib/backendProxyPolicy";
+import { portableAuthorization } from "@/lib/portableProxyPolicy";
+
+export const maxDuration = 180;
+const upstreamTimeout = process.env.FACTORYMIND_DEPLOYMENT_TARGET === "render" ? 170_000 : 895_000;
 
 const auth = new GoogleAuth();
 const LIMIT = 6 * 1024 * 1024;
+
+async function backendHeaders(request: Request, base: URL): Promise<Headers | null> {
+  const headers = new Headers();
+  if (process.env.FACTORYMIND_DEPLOYMENT_TARGET === "render") {
+    const authorization = portableAuthorization(request.headers.get("cookie"));
+    if (!authorization) return null;
+    headers.set("Authorization", authorization);
+  } else {
+    const client = await auth.getIdTokenClient(base.origin);
+    const token = await client.idTokenProvider.fetchIdToken(base.origin);
+    headers.set("Authorization", `Bearer ${token}`);
+    headers.set("X-Serverless-Authorization", `Bearer ${token}`);
+  }
+  return headers;
+}
+
+function writeOrigin(request: Request): string {
+  if (process.env.FACTORYMIND_WEB_ORIGIN) return process.env.FACTORYMIND_WEB_ORIGIN;
+  if (process.env.FACTORYMIND_DEPLOYMENT_TARGET === "render") return "";
+  return new URL(request.url).origin;
+}
 
 async function forward(request: Request, context: { params: Promise<{ path: string[] }> }) {
   const backend = process.env.FACTORYMIND_BACKEND_URL;
@@ -18,7 +43,7 @@ async function forward(request: Request, context: { params: Promise<{ path: stri
   const write = request.method !== "GET" && request.method !== "HEAD";
   if (write) {
     const origin = request.headers.get("origin");
-    const trusted = process.env.FACTORYMIND_WEB_ORIGIN ?? new URL(request.url).origin;
+    const trusted = writeOrigin(request);
     if (!trustedWriteOrigin(origin, trusted)) return Response.json({ detail: "Untrusted request origin" }, { status: 403 });
   }
   const body = write ? await boundedBody(request, LIMIT) : undefined;
@@ -26,11 +51,8 @@ async function forward(request: Request, context: { params: Promise<{ path: stri
     return Response.json({ detail: "Upload exceeds proxy limit" }, { status: 413 });
   }
   try {
-    const client = await auth.getIdTokenClient(base.origin);
-    const token = await client.idTokenProvider.fetchIdToken(base.origin);
-    const headers = new Headers();
-    headers.set("Authorization", `Bearer ${token}`);
-    headers.set("X-Serverless-Authorization", `Bearer ${token}`);
+    const headers = await backendHeaders(request, base);
+    if (!headers) return Response.json({ detail: "Sign in to the demo workspace at /login" }, { status: 401 });
     const contentType = request.headers.get("content-type");
     if (contentType) headers.set("content-type", contentType);
     const incoming = new URL(request.url);
@@ -38,7 +60,7 @@ async function forward(request: Request, context: { params: Promise<{ path: stri
     target.search = incoming.search;
     const upstream = await fetch(target, {
       method: request.method, headers, body,
-      redirect: "error", cache: "no-store", signal: AbortSignal.timeout(895_000),
+      redirect: "error", cache: "no-store", signal: AbortSignal.timeout(upstreamTimeout),
     });
     const responseHeaders = new Headers({ "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" });
     for (const name of ["content-type", "retry-after"]) {

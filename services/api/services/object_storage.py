@@ -36,4 +36,7 @@ class GcsObjectStore:
 
 @lru_cache(maxsize=1)
 def object_store():
+    if config.settings.upload_backend == 'supabase':
+        from services.api.services.supabase_storage import SupabaseObjectStore
+        return SupabaseObjectStore()
     return GcsObjectStore()

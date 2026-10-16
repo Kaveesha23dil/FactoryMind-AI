@@ -23,7 +23,7 @@ def _usage(jobs):
 
 
 @router.get('', response_model=SettingsResponse)
-def settings():
+def settings(request: Request):
     s = config.settings
     engine = get_engine()
     service = get_service()
@@ -31,6 +31,10 @@ def settings():
     _, failed = service.repository.list_all(1, 0, 'failed')
     knowledge = get_knowledge_repository()
     threshold = engine.detector.anomaly_score_threshold
+    database_provider = {'sqlite': 'SQLite', 'firestore': 'Firestore', 'postgres': 'PostgreSQL'}[s.persistence_backend]
+    image_provider = {'local': 'Local files', 'gcs': 'Private Google Cloud Storage', 'supabase': 'Private Supabase Storage'}[s.upload_backend]
+    portable = s.app_env == 'production' and s.deployment_target == 'render'
+    role = ('Presenter' if request.state.principal in s.portable_writers else 'Viewer') if portable else None
     return {
         'workspace': {'workspace': 'FactoryMind workspace', 'application': 'FactoryMind AI', 'team': 'AetherForge', 'environment': s.app_env},
         'ai': {'provider': s.ai_provider, 'model': s.gemini_model, 'enabled': s.ai_investigation_enabled,
@@ -47,12 +51,12 @@ def settings():
                     'split_seed': config.RANDOM_SEED, 'last_evaluation_at': None},
         'data': {'name': config.DATASET_NAME, 'origin': config.DATASET_SOURCE, 'classification': 'Synthetic benchmark',
                  'records': engine.summary()['analyzed_sample_count'], 'version': hashlib.sha256(s.dataset_path.read_bytes()).hexdigest()[:12],
-                 'last_refresh_at': None, 'database_provider': 'Firestore' if s.persistence_backend == 'firestore' else 'SQLite',
-                 'image_provider': 'Private Google Cloud Storage' if s.upload_backend == 'gcs' else 'Local files',
+                 'last_refresh_at': None, 'database_provider': database_provider,
+                 'image_provider': image_provider,
                  'document_count': len({p.document_id for p in knowledge.passages}), 'passage_count': len(knowledge.passages),
                  'document_status': 'Packaged synthetic/general reference corpus; indexed for deterministic retrieval', 'storage_usage_bytes': None},
-        'security': {'authentication': 'Verified Google service identity' if s.app_env == 'production' else 'Unauthenticated local development',
-                     'role': None, 'session': 'End-user sessions are not implemented', 'access_management': 'End-user role management is not configured',
+        'security': {'authentication': 'Verified Supabase user' if portable else ('Verified Google service identity' if s.app_env == 'production' else 'Unauthenticated local development'),
+                     'role': role, 'session': 'Expiring Supabase user session' if portable else 'End-user sessions are not implemented', 'access_management': 'Explicit server-side members of one shared demo workspace' if portable else 'End-user role management is not configured',
                      'operational_settings': 'Deployment administrator only; no runtime configuration write API'},
     }
 
@@ -66,7 +70,7 @@ def system(request: Request):
     except Exception:
         database = 'unavailable'
     storage = 'unknown'
-    if config.settings.upload_backend == 'gcs':
+    if config.settings.upload_backend in ('gcs', 'supabase'):
         try:
             from services.api.services.object_storage import object_store
             object_store().check()

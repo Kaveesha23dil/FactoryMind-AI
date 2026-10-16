@@ -1,5 +1,10 @@
 # FactoryMind AI
 
+For the optional billing-free Render/Supabase prototype profile, see
+[free-hosting deployment](reports/free-hosting-deployment.md) and
+[readiness and verification](reports/free-hosting-readiness.md). Google Cloud and
+local development modes remain supported. No hosted deployment is implied.
+
 FactoryMind AI uses Next.js and FastAPI to analyze the AI4I synthetic dataset.
 It also runs Gemini-powered, evidence-based root-cause investigations on detected
 anomalies using Google ADK multi-agent pipelines.

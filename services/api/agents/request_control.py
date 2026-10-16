@@ -8,6 +8,13 @@ from services.api.core import config
 from services.api.db.database import Database
 
 
+def control_database():
+    if config.settings.persistence_backend == 'postgres':
+        from services.api.db.postgres import PostgresDatabase
+        return PostgresDatabase()
+    return Database()
+
+
 @asynccontextmanager
 async def request_slot():
     if config.settings.persistence_backend == 'firestore':
@@ -24,7 +31,7 @@ async def request_slot():
             if acquired:
                 await asyncio.to_thread(firestore_control.release, token)
         return
-    database = Database()
+    database = control_database()
     database.initialize()
     token = uuid.uuid4().hex
     limit = max(1, config.settings.gemini_concurrency)
@@ -55,7 +62,7 @@ def provider_cooldown(model):
     if config.settings.persistence_backend == 'firestore':
         from services.api.agents.firestore_control import cooldown
         return cooldown(model)
-    database = Database()
+    database = control_database()
     database.initialize()
     with database.connect() as connection:
         row = connection.execute('SELECT category,expires_at FROM gemini_provider_cooldowns WHERE model=? AND expires_at>?',
@@ -75,7 +82,7 @@ def save_cooldown(model, failure):
         from services.api.agents.firestore_control import save
         save(model, failure.category, delay)
         return
-    database = Database()
+    database = control_database()
     database.initialize()
     with database.connect() as connection:
         connection.execute('INSERT INTO gemini_provider_cooldowns VALUES (?,?,?) ON CONFLICT(model) DO UPDATE SET category=excluded.category, expires_at=MAX(expires_at,excluded.expires_at)',

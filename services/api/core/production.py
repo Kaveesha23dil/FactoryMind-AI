@@ -9,12 +9,31 @@ def validate_configuration(settings=None):
         raise RuntimeError('Unsupported application environment')
     if os.environ.get('K_SERVICE') and s.app_env != 'production':
         raise RuntimeError('Cloud Run requires the production profile')
-    if s.persistence_backend not in ('sqlite', 'firestore') or s.upload_backend not in ('local', 'gcs'):
+    if os.environ.get('RENDER') and s.app_env != 'production':
+        raise RuntimeError('Render requires the production profile')
+    if s.persistence_backend not in ('sqlite', 'firestore', 'postgres') or s.upload_backend not in ('local', 'gcs', 'supabase'):
         raise RuntimeError('Unsupported storage backend')
-    if s.job_dispatch not in ('thread', 'tasks'):
+    if s.job_dispatch not in ('thread', 'tasks', 'portable'):
         raise RuntimeError('Unsupported investigation dispatch backend')
     if s.app_env != 'production':
         return
+    if s.deployment_target == 'render':
+        from urllib.parse import urlsplit, parse_qs
+        database = urlsplit(s.database_url or '')
+        valid = (s.persistence_backend == 'postgres' and database.scheme in ('postgres', 'postgresql') and
+            database.hostname and database.port in (None, 5432) and parse_qs(database.query).get('sslmode', [''])[0] in ('require', 'verify-full') and
+            s.upload_backend == 'supabase' and bool(s.upload_bucket and s.supabase_service_key and s.supabase_anon_key) and
+            s.supabase_url and s.supabase_url.startswith('https://') and
+            s.job_dispatch == 'portable' and not s.investigation_async and
+            bool(s.portable_readers or s.portable_writers) and '*' not in s.cors_origins and
+            s.investigation_max_retries == 0 and 1 <= s.investigation_timeout_seconds <= 20 and
+            s.gemini_concurrency == 1 and s.ai_provider == 'google' and not s.use_vertex_ai and
+            (not s.ai_investigation_enabled or bool(s.google_api_key)))
+        if not valid:
+            raise RuntimeError('Portable production requires SSL PostgreSQL, private Supabase storage/auth, explicit members and bounded synchronous execution; check portable environment template')
+        return
+    if s.deployment_target != 'gcp':
+        raise RuntimeError('Unsupported production deployment target')
     checks = {
         'production requires Firestore': s.persistence_backend == 'firestore',
         'production requires a private GCS upload bucket': s.upload_backend == 'gcs' and bool(s.upload_bucket),

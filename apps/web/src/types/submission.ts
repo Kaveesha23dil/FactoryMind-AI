@@ -16,7 +16,7 @@ export interface SubmissionOverview {
   severity_distribution: Record<string, number>;
   active_incidents: number;
   investigations: Record<string, number>;
-  recent: Array<{ investigation_id: string; status: string; summary: string | null }>;
+  recent: Array<{ investigation_id: string; incident_id: string; status: string; summary: string | null; created_at: string }>;
   integrity: { audited_reports: number; completed_reports: number; scan_limit: number; citation_links: number; resolved_citation_links: number; reports_needing_attention: number };
   demo: null | { investigation_id: string; incident_id: string; record_id: number; generated_at: string; model: string; label: string; audit: EvidenceAudit };
 }

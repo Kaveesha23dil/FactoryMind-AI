@@ -26,7 +26,6 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { href: "/overview", label: "Overview", icon: LayoutDashboard },
-  { href: "/demo", label: "Guided saved demo", icon: Bot },
   { href: "/monitoring", label: "Machine Monitoring", icon: Activity },
   { href: "/anomalies", label: "Anomaly Monitoring", icon: ScanSearch },
   { href: "/incidents", label: "Incidents", icon: AlertTriangle },
@@ -151,11 +150,6 @@ export default function AppSidebar() {
           </ul>
         </nav>
 
-        <div className="border-t border-line px-5 py-4 text-[11px] leading-relaxed text-slate-500">
-          AI4I 2020 dataset integration
-          <br />
-          Synthetic benchmark · human review required
-        </div>
       </aside>
     </>
   );

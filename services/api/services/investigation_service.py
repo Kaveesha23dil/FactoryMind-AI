@@ -248,6 +248,13 @@ class InvestigationService:
     def run_job(
         self, investigation_id: str, prepared=None  # PreparedContext | None
     ) -> dict:
+        if config.settings.persistence_backend == 'postgres':
+            from services.api.db.postgres import execution_lock
+            with execution_lock(investigation_id) as acquired:
+                return self._run_job(investigation_id, prepared) if acquired else self.get(investigation_id)
+        return self._run_job(investigation_id, prepared)
+
+    def _run_job(self, investigation_id: str, prepared=None) -> dict:
         """Execute an investigation. Idempotent: completed/running jobs are skipped.
 
         ``prepared`` lets a counterfactual revision hand the orchestrator a

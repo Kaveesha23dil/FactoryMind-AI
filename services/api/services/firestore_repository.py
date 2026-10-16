@@ -241,6 +241,9 @@ class FirestoreVisualRepository(FirestoreRepository):
 
 
 def repository(kind, local_factory):
+    if config.settings.persistence_backend == 'postgres':
+        from services.api.db.postgres import repository as postgres_repository
+        return postgres_repository(kind)
     if config.settings.persistence_backend == 'sqlite':
         return local_factory()
     factories = {'incidents': FirestoreIncidentRepository, 'investigations': FirestoreInvestigationRepository,

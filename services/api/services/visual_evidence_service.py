@@ -112,7 +112,7 @@ class VisualEvidenceService:
         width, height = image_utils.image_dimensions(data)
         image_id = f"{config.VISUAL_IMAGE_ID_PREFIX}{uuid.uuid4().hex[:10].upper()}"
         storage_ref = f"{image_id}{image_utils.extension_for(resolved_mime)}"
-        if config.settings.upload_backend == 'gcs':
+        if config.settings.upload_backend in ('gcs', 'supabase'):
             from services.api.services.object_storage import object_store
             object_store().write(storage_ref, data, resolved_mime)
         else:
@@ -132,7 +132,7 @@ class VisualEvidenceService:
                 "width": width,
                 "height": height,
                 "provenance": _VISUAL_PROVENANCE,
-                "storage_backend": 'google_cloud_storage' if config.settings.upload_backend == 'gcs' else STORAGE_BACKEND,
+                "storage_backend": {'gcs': 'google_cloud_storage', 'supabase': 'supabase'}.get(config.settings.upload_backend, STORAGE_BACKEND),
                 "status": "stored",
                 "summary": None,
                 "observations": [],
@@ -151,7 +151,7 @@ class VisualEvidenceService:
         runtime_factory=build_runtime,
     ) -> dict:
         record = self.get(image_id)
-        if record['storage_backend'] == 'google_cloud_storage':
+        if record['storage_backend'] in ('google_cloud_storage', 'supabase'):
             from services.api.services.object_storage import object_store
             if not object_store().exists(record['storage_ref']):
                 raise VisualEvidenceError('Stored image object is missing')
@@ -162,7 +162,9 @@ class VisualEvidenceService:
 
         if investigation_id:
             # Validate the investigation exists before we attach anything.
-            self.investigations.get(investigation_id)
+            investigation = self.investigations.get(investigation_id)
+            if investigation['incident_id'] != record['incident_id']:
+                raise VisualEvidenceError('Image and investigation must belong to the same incident')
 
         self.repository.update(
             image_id, status="analyzing", error=None, investigation_id=investigation_id
@@ -171,7 +173,7 @@ class VisualEvidenceService:
             retry_at = self.investigations._provider_cooldown()
             if retry_at:
                 raise VisualEvidenceError(f'Gemini quota cooldown is active until {retry_at}.')
-            data = object_store().read(record['storage_ref']) if record['storage_backend'] == 'google_cloud_storage' else path.read_bytes()
+            data = object_store().read(record['storage_ref']) if record['storage_backend'] in ('google_cloud_storage', 'supabase') else path.read_bytes()
             context = {
                 "incident": get_incident_context(record["incident_id"]),
                 "anomaly": get_anomaly_analysis(record["incident_id"]),

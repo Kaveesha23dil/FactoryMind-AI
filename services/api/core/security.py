@@ -9,6 +9,9 @@ from services.api.core import config
 async def authorize(request, call_next):
     if config.settings.app_env != 'production' or request.url.path in ('/healthz', '/readyz') or request.method == 'OPTIONS':
         return await call_next(request)
+    if config.settings.deployment_target == 'render':
+        from services.api.core.portable import authorize_portable
+        return await authorize_portable(request, call_next)
     value = request.headers.get('Authorization', '')
     if not value.startswith('Bearer '):
         return JSONResponse({'detail': 'Authentication required'}, status_code=401)

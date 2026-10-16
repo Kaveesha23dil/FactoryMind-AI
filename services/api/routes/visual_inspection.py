@@ -93,7 +93,7 @@ def get_image(image_id: str) -> dict:
 def get_image_content(image_id: str):
     try:
         service = get_service()
-        if service.get(image_id)['storage_backend'] == 'google_cloud_storage':
+        if service.get(image_id)['storage_backend'] in ('google_cloud_storage', 'supabase'):
             return Response(service.content_bytes(image_id), media_type=service.content_type(image_id),
                             headers={'Cache-Control':'private, no-store', 'X-Content-Type-Options':'nosniff'})
         return FileResponse(

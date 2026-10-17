@@ -34,7 +34,7 @@ Disable email signup and avoid public password distribution. Rate limiting of pa
 
 Create an eligible Free project only after approval; do not enable paid upgrades. Create a **private**, non-public Storage bucket named `factorymind-evidence`; apply its image MIME allowlist and 5 MB maximum as an additional defense. Do not expose the `factorymind` schema through the Supabase Data API or grant it to `anon` or `authenticated`. Browser users access records only through authenticated FastAPI endpoints. Backend service-role credentials bypass Storage RLS and must remain backend-only.
 
-Copy the actual **session pooler** connection string from Supabase Connect, using SSL. Use port 5432, not transaction pooler 6543: execution locking uses session advisory locks. IPv4-only hosts usually require the shared pooler. Copy the host/project reference rather than constructing it. Percent-encode password characters. The runtime disables prepared statements; `sslmode=require` is the minimum accepted setting; prefer `verify-full` with the appropriate trusted CA configuration.
+Copy the actual **session pooler** connection string from Supabase Connect, using SSL. Use port 5432, not transaction pooler 6543: execution locking uses session advisory locks. IPv4-only hosts usually require the shared pooler. Copy the host/project reference rather than guessing it. The setup helper below uses the user-verified project parameters and percent-encodes password characters. The runtime disables prepared statements; `sslmode=require` is the minimum accepted setting; prefer `verify-full` with the appropriate trusted CA configuration.
 
 [Supabase connection guidance](https://supabase.com/docs/guides/database/connecting-to-postgres), [private downloads](https://supabase.com/docs/guides/storage/serving/downloads), [JWT verification](https://supabase.com/docs/guides/auth/jwts).
 
@@ -45,13 +45,19 @@ Run manually from repository root, after approval and a content review. Stop loc
 ```powershell
 Set-Location C:\Users\kavee\Documents\factorymind-ai
 & .\services\api\.venv\Scripts\python.exe -m pip install -r services/api/requirements-portable.txt
-$databaseSecret = Read-Host 'Supabase administrative session-pooler URI with sslmode=require' -AsSecureString
-$env:FACTORYMIND_DATABASE_URL = [System.Net.NetworkCredential]::new('', $databaseSecret).Password
+# Rotate the exposed password in Supabase first. Enter ONLY the NEW password here.
+# The helper builds the full URI; no credentials are written to disk or printed.
+. .\scripts\setup_supabase_connection.ps1
+& .\services\api\.venv\Scripts\python.exe -m scripts.check_postgres_connection
+if ($LASTEXITCODE -ne 0) { throw 'Connection check failed. Stop; do not apply migration.' }
 # Inspection only: no destination connection or write without --apply.
 & .\services\api\.venv\Scripts\python.exe -m scripts.migrate_postgres schema
 & .\services\api\.venv\Scripts\python.exe -m scripts.migrate_postgres import --source services/api/data/incidents.db --investigation INV-D944C855CC
 # ONLY after approval, review and independent backup planning:
 & .\services\api\.venv\Scripts\python.exe -m scripts.migrate_postgres schema --apply
+if ($LASTEXITCODE -ne 0) { throw 'Schema apply failed. Stop before import.' }
+& .\services\api\.venv\Scripts\python.exe -m scripts.check_postgres_connection --verify-schema
+if ($LASTEXITCODE -ne 0) { throw 'Schema verification failed. Stop before import.' }
 & .\services\api\.venv\Scripts\python.exe -m scripts.migrate_postgres import --source services/api/data/incidents.db --investigation INV-D944C855CC --reviewed --backup backups/portable-reviewed.sqlite --apply
 Remove-Item Env:FACTORYMIND_DATABASE_URL
 ```
@@ -218,3 +224,13 @@ See `free-hosting-readiness.md` for exact tests and changed files. Real PostgreS
 - `services/api/services/visual_evidence_service.py`
 - `services/api/tests/test_portable.py`
 - `services/api/tests/test_postgres_integration.py`
+
+### Connection setup correction — 2026-10-17
+
+Root cause of the reported failure: a password alone was assigned to `FACTORYMIND_DATABASE_URL`. Configuration reads that process variable before `.env` (`load_dotenv(..., override=False)`), so the malformed value won over any file configuration. Settings are loaded at Python process import; start a new Python command after setting the URI. A child PowerShell process cannot update its parent session: dot-source the helper in the same session used for migration.
+
+`scripts/setup_supabase_connection.ps1` prompts for the **newly rotated** password only, constructs the full URI using the user-verified host `aws-0-ap-southeast-1.pooler.supabase.com`, session port `5432`, database `postgres`, username `postgres.qeetbmeleqsmlqywtdyr`, and `sslmode=require`. It percent-encodes password characters, removes a stale environment value before prompting, prints only safe metadata and drops temporary plaintext references. The resulting process environment necessarily contains the URI until removed; it is not persisted with SetEnvironmentVariable or written to a credential file. Managed string memory cannot be reliably zeroed. Do not use shell transcripts, environment dumps, screenshots or commands that print the URI.
+
+`scripts/check_postgres_connection.py` validates URI structure before connecting, uses a ten-second connection timeout and a read-only transaction, executes `SELECT 1`, and returns exit code 0 on success or 1 on failure. Error output contains only safe metadata and categories: invalid URI, incorrect password, DNS failure, network timeout, SSL error, missing driver, or other configuration errors. Provider exception text is not printed. `--verify-schema` checks the migration version and expected table names through read-only SELECT statements. SELECT 1 proves connectivity, not DDL permission: schema creation still requires the Supabase project administrative/authorized account; the runtime restricted role is intentionally unsuitable for applying migrations.
+
+Verification: 43 focused tests passed and the explicitly enabled real-PostgreSQL test was skipped. After the final stale-variable guard, all 14 new connection/setup tests passed again. The synthetic PowerShell test exercised dot-sourcing, special-character encoding, safe output and temporary-variable cleanup without storing credentials. A CLI run with an explicitly empty URI returned `{"success": false, "category": "Invalid connection URI"}` and exit code 1 without networking. No exposed credential was used. Real SELECT 1 and schema verification remain pending password rotation and the operator's local setup; no migration ran. Existing migration/transport logic was inspected and left unchanged: versioned schema creation is transactional, contains no DROP/DELETE, and does not copy user records by itself.
